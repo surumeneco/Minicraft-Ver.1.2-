@@ -8,11 +8,54 @@ function surfY(x,z){for(let y=H-1;y>0;y--)if(solid(getB(x,y,z)))return y+1;retur
 function respawn(){P.x=SX+.5;P.z=SZ+.5;P.y=surfY(SX,SZ)+.1;P.vy=0;hp=20;hunger=10;hungerTimer=0;updateHp()}
 const SK='minicraft_v2',toastEl=document.getElementById('toast');let tt;
 function toast(t){toastEl.textContent=t;toastEl.style.opacity=1;clearTimeout(tt);tt=setTimeout(()=>toastEl.style.opacity=0,1800)}
-const chests={},RS=new Map();let noSave=false,pendingCraftSlots=null;function save(man){if(noSave)return;try{const e={};edits.forEach((m,k)=>{const a=[];m.forEach((b,i)=>a.push(i,b));e[k]=a});
- localStorage.setItem(SK,JSON.stringify({p:[P.x,P.y,P.z,P.yaw,P.pitch],hot,sel,e,invCount,equipped,ch:chests,hunger,hungerTimer,hp,worldClock,craftSlots}));if(typeof refreshSaveInfo==='function')refreshSaveInfo();if(man)toast('セーブしました')}catch(x){if(man)toast('セーブに失敗しました')}}
-function load(){try{const j=JSON.parse(localStorage.getItem(SK));if(!j)return false;
- for(const k in j.e){const m=new Map(),a=j.e[k];for(let i=0;i<a.length;i+=2)m.set(a[i],a[i+1]);edits.set(+k,m)}
- [P.x,P.y,P.z,P.yaw,P.pitch]=j.p;if(j.hot&&j.hot.length==9)j.hot.forEach((v,i)=>hot[i]=(v===24||v===25)?1:v);sel=j.sel||0;if(j.invCount)Object.assign(invCount,j.invCount);if(j.equipped)Object.assign(equipped,j.equipped);if(j.ch)Object.assign(chests,j.ch);if(Number.isFinite(j.hunger))hunger=Math.max(0,Math.min(10,j.hunger));if(Number.isFinite(j.hungerTimer))hungerTimer=Math.max(0,j.hungerTimer%300);hp=Number.isFinite(j.hp)?Math.max(0,Math.min(20,j.hp)):20;worldClock=Number.isFinite(j.worldClock)?((j.worldClock%TOTAL_CYCLE)+TOTAL_CYCLE)%TOTAL_CYCLE:0;pendingCraftSlots=Array.isArray(j.craftSlots)?j.craftSlots.slice(0,4):null;return true}catch(x){return false}}
+const chests={},RS=new Map();let noSave=false,pendingCraftSlots=null;function save(man){
+ if(noSave)return;
+ try{
+  const e=serializeWorldEdits();
+  localStorage.setItem(SK,JSON.stringify({
+   p:[P.x,P.y,P.z,P.yaw,P.pitch],hot,sel,e,invCount,equipped,
+   ch:chests,hunger,hungerTimer,hp,worldClock,craftSlots
+  }));
+  if(typeof refreshSaveInfo==='function')refreshSaveInfo();
+  if(man)toast('セーブしました');
+ }catch(x){if(man)toast('セーブに失敗しました')}
+}
+function load(){
+ try{
+  const j=JSON.parse(localStorage.getItem(SK));
+  if(!j)return false;
+  restoreWorldEdits(j.e);
+  [P.x,P.y,P.z,P.yaw,P.pitch]=j.p;
+  if(j.hot&&j.hot.length==9)j.hot.forEach((v,i)=>hot[i]=(v===24||v===25)?1:v);
+  sel=j.sel||0;
+  if(j.invCount)Object.assign(invCount,j.invCount);
+  if(j.equipped)Object.assign(equipped,j.equipped);
+  if(j.ch)Object.assign(chests,j.ch);
+  if(Number.isFinite(j.hunger))hunger=Math.max(0,Math.min(10,j.hunger));
+  if(Number.isFinite(j.hungerTimer))hungerTimer=Math.max(0,j.hungerTimer%300);
+  hp=Number.isFinite(j.hp)?Math.max(0,Math.min(20,j.hp)):20;
+  worldClock=Number.isFinite(j.worldClock)?((j.worldClock%TOTAL_CYCLE)+TOTAL_CYCLE)%TOTAL_CYCLE:0;
+  pendingCraftSlots=Array.isArray(j.craftSlots)?j.craftSlots.slice(0,4):null;
+  return true;
+ }catch(x){return false}
+}
+// Edit history is stored as alternating index/block-value pairs per chunk.
+function serializeWorldEdits(){
+ const result={};
+ edits.forEach((chunkEdits,key)=>{
+  const pairs=[];
+  chunkEdits.forEach((block,index)=>pairs.push(index,block));
+  result[key]=pairs;
+ });
+ return result;
+}
+function restoreWorldEdits(serialized){
+ for(const key in serialized){
+  const chunkEdits=new Map(),pairs=serialized[key];
+  for(let i=0;i<pairs.length;i+=2)chunkEdits.set(pairs[i],pairs[i+1]);
+  edits.set(+key,chunkEdits);
+ }
+}
 // ワールド読込はインベントリ・装備・回路関数の初期化後に実行する（TDZによる起動失敗を防止）
 let loaded=false;
 setInterval(()=>save(false),20000);addEventListener('pagehide',()=>save(false));document.addEventListener('visibilitychange',()=>{if(document.hidden)save(false)});
