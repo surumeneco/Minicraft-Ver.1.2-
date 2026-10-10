@@ -52,10 +52,10 @@ test('flow movement obeys collision checks and stays below the pickup radius', (
   h.ctx.updFlow=d=>{d.fx=2;d.fz=-1;};
   h.ctx.getB=(x,_,z)=>x>0?1:0;
   h.ctx.solid=block=>block===1;
-  h.ctx.spawnDrop(100,1,0,1.05,0,0,0,0);
+  h.ctx.spawnDrop(100,1,.9,1.05,0,0,0,0);
   h.ctx.dropTick(.1);
   const d=h.drops()[0];
-  near(d.x,0);near(d.z,-.1);near(d.y,1.05);
+  near(d.x,.9);near(d.z,-.1);near(d.y,1.05);
   assert.equal(h.received.length,0);
 });
 
