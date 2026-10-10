@@ -1,5 +1,4 @@
-const chestUI=document.getElementById('chestUI'),chestBody=document.getElementById('chestBody');
-let chestKey=null;
+const chestUI=document.getElementById('chestUI'),chestBody=document.getElementById('chestBody');let chestKey=null;
 
 function openChest(x,y,z){
  chestKey=x+','+y+','+z;
