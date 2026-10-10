@@ -233,11 +233,17 @@ function setB(x,y,z,b){
  fluidDirty(x,y,z,old,b);
  rememberBlockEdit(cx,cz,i,b);
  mesh(c);
- const nn=(a,q)=>{const o=C.get(ck(a,q));if(o&&o.v)mesh(o)};
- if(lx===0)nn(cx-1,cz);
- if(lx===15)nn(cx+1,cz);
- if(lz===0)nn(cx,cz-1);
- if(lz===15)nn(cx,cz+1);
+ forEachBoundaryChunk(cx,cz,lx,lz,(a,q)=>{
+  const neighbor=C.get(ck(a,q));
+  if(neighbor&&neighbor.v)mesh(neighbor);
+ });
+}
+// Visit the affected horizontal neighbors in the original west/east/north/south order.
+function forEachBoundaryChunk(cx,cz,lx,lz,visit){
+ if(lx===0)visit(cx-1,cz);
+ if(lx===15)visit(cx+1,cz);
+ if(lz===0)visit(cx,cz-1);
+ if(lz===15)visit(cx,cz+1);
 }
 // Shared primitive: mutates chunk bytes/light state but does not call subsystem hooks.
 // Both update paths preserve their existing hook ordering and mesh policy.
