@@ -20,10 +20,7 @@ function applyChanges(ch){
   rsReg(x,y,z,old,b);
   fluidDirty(x,y,z,old,b);
   chunksToRemesh.add(c);
-  if(lx===0)chunksToRemesh.add(getC(cx-1,cz));
-  if(lx===15)chunksToRemesh.add(getC(cx+1,cz));
-  if(lz===0)chunksToRemesh.add(getC(cx,cz-1));
-  if(lz===15)chunksToRemesh.add(getC(cx,cz+1));
+  forEachBoundaryChunk(cx,cz,lx,lz,(a,q)=>chunksToRemesh.add(getC(a,q)));
  }
  chunksToRemesh.forEach(c=>{if(c&&c.v)mesh(c)});
 }

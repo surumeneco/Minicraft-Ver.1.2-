@@ -7,8 +7,8 @@ test('batch world updates invalidate lighting on lamp transitions (#2)', () => {
   const src=readFileSync('src/js/06-circuits.js','utf8');
   const code=src.slice(src.indexOf('function applyChanges(ch){'),src.indexOf('const contAt='));
   const world=readFileSync('src/js/03-world.js','utf8');
-  const support=world.slice(world.indexOf('function writeBlockState('),world.indexOf('let queue=[]'))
-  assert.ok(support.startsWith('function writeBlockState('), 'shared block-write helpers must be available');
+  const support=world.slice(world.indexOf('function forEachBoundaryChunk('),world.indexOf('let queue=[]'))
+  assert.ok(support.startsWith('function forEachBoundaryChunk('), 'shared block-write helpers must be available');
   assert.ok(code.startsWith('function applyChanges(ch){'));
   const data=new Uint16Array(16*80*16),c={cx:0,cz:0,top:6,v:true,d:data};
   const dirty=new Set();
