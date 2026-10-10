@@ -24,20 +24,30 @@ function load(){
  try{
   const j=JSON.parse(localStorage.getItem(SK));
   if(!j)return false;
+  // Preserve the original restore order and object identities.
   restoreWorldEdits(j.e);
-  [P.x,P.y,P.z,P.yaw,P.pitch]=j.p;
-  if(j.hot&&j.hot.length==9)j.hot.forEach((v,i)=>hot[i]=(v===24||v===25)?1:v);
-  sel=j.sel||0;
-  if(j.invCount)Object.assign(invCount,j.invCount);
-  if(j.equipped)Object.assign(equipped,j.equipped);
-  if(j.ch)Object.assign(chests,j.ch);
-  if(Number.isFinite(j.hunger))hunger=Math.max(0,Math.min(10,j.hunger));
-  if(Number.isFinite(j.hungerTimer))hungerTimer=Math.max(0,j.hungerTimer%300);
-  hp=Number.isFinite(j.hp)?Math.max(0,Math.min(20,j.hp)):20;
-  worldClock=Number.isFinite(j.worldClock)?((j.worldClock%TOTAL_CYCLE)+TOTAL_CYCLE)%TOTAL_CYCLE:0;
-  pendingCraftSlots=Array.isArray(j.craftSlots)?j.craftSlots.slice(0,4):null;
+  restorePlayerPositionAndHotbar(j);
+  restoreInventoryAndContainers(j);
+  restoreSurvivalState(j);
   return true;
  }catch(x){return false}
+}
+function restorePlayerPositionAndHotbar(j){
+ [P.x,P.y,P.z,P.yaw,P.pitch]=j.p;
+ if(j.hot&&j.hot.length==9)j.hot.forEach((v,i)=>hot[i]=(v===24||v===25)?1:v);
+ sel=j.sel||0;
+}
+function restoreInventoryAndContainers(j){
+ if(j.invCount)Object.assign(invCount,j.invCount);
+ if(j.equipped)Object.assign(equipped,j.equipped);
+ if(j.ch)Object.assign(chests,j.ch);
+}
+function restoreSurvivalState(j){
+ if(Number.isFinite(j.hunger))hunger=Math.max(0,Math.min(10,j.hunger));
+ if(Number.isFinite(j.hungerTimer))hungerTimer=Math.max(0,j.hungerTimer%300);
+ hp=Number.isFinite(j.hp)?Math.max(0,Math.min(20,j.hp)):20;
+ worldClock=Number.isFinite(j.worldClock)?((j.worldClock%TOTAL_CYCLE)+TOTAL_CYCLE)%TOTAL_CYCLE:0;
+ pendingCraftSlots=Array.isArray(j.craftSlots)?j.craftSlots.slice(0,4):null;
 }
 // Edit history is stored as alternating index/block-value pairs per chunk.
 function serializeWorldEdits(){
