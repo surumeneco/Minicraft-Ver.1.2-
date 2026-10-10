@@ -25,14 +25,52 @@ function dropSelected(){
  spawnDrop(id,1,P.x+Math.sin(P.yaw)*.8,P.y+1.0,P.z+Math.cos(P.yaw)*.8);
  toast((ITEMS[id]?.name||'アイテム')+'を落としました');
 }
+function advanceDropMotion(d,dt){
+ if((d.gt-=dt)<=0){
+  d.gt=.5;
+  d.gy=surfY(Math.floor(d.x),Math.floor(d.z))+1.05;
+ }
+ const groundY=d.gy;
+ d.y+=d.vy*dt;
+ d.vy-=12*dt;
+ if(d.vx||d.vz){
+  d.x+=d.vx*dt;
+  d.z+=d.vz*dt;
+  const friction=Math.max(0,1-3*dt);
+  d.vx*=friction;
+  d.vz*=friction;
+ }
+ if(d.y<groundY){d.y=groundY;d.vy=0;}
+}
+function applyDropFlow(d,dt){
+ updFlow(d,Math.floor(d.x),[d.y-.2,d.y-1.1,d.y-1.9],Math.floor(d.z),dt);
+ if(!(d.fx||d.fz))return;
+ const nextX=d.x+d.fx*dt,nextZ=d.z+d.fz*dt,blockY=Math.floor(d.y-.5);
+ if(!solid(getB(Math.floor(nextX),blockY,Math.floor(d.z))))d.x=nextX;
+ if(!solid(getB(Math.floor(d.x),blockY,Math.floor(nextZ))))d.z=nextZ;
+}
+function updateDropVisual(d){
+ d.g.position.set(d.x,d.y+.12*Math.sin(d.t*2),d.z);
+ d.g.rotation.y=d.t;
+}
 function dropTick(dt){
  for(let i=droppedItems.length-1;i>=0;i--){
-  const d=droppedItems[i];d.t+=dt*d.spin;if((d.age+=dt)>240){scene.remove(d.g);droppedItems.splice(i,1);continue}
-  if((d.gt-=dt)<=0){d.gt=.5;d.gy=surfY(Math.floor(d.x),Math.floor(d.z))+1.05}const gy=d.gy;
-  d.y+=d.vy*dt;d.vy-=12*dt;if(d.vx||d.vz){d.x+=d.vx*dt;d.z+=d.vz*dt;const fr=Math.max(0,1-3*dt);d.vx*=fr;d.vz*=fr}
-  if(d.y<gy){d.y=gy;d.vy=0}
-  updFlow(d,Math.floor(d.x),[d.y-.2,d.y-1.1,d.y-1.9],Math.floor(d.z),dt);if(d.fx||d.fz){const nx=d.x+d.fx*dt,nz=d.z+d.fz*dt,fy=Math.floor(d.y-.5);if(!solid(getB(Math.floor(nx),fy,Math.floor(d.z))))d.x=nx;if(!solid(getB(Math.floor(d.x),fy,Math.floor(nz))))d.z=nz}
-  d.g.position.set(d.x,d.y+.12*Math.sin(d.t*2),d.z);d.g.rotation.y=d.t;
-  if(Math.hypot(d.x-P.x,d.y-P.y,d.z-P.z)<1.45){give(d.id,d.n);scene.remove(d.g);droppedItems.splice(i,1);toast((ITEMS[d.id]?.name||'アイテム')+'を拾った')}
+  const d=droppedItems[i];
+  d.t+=dt*d.spin;
+  if((d.age+=dt)>240){
+   scene.remove(d.g);
+   droppedItems.splice(i,1);
+   continue;
+  }
+
+  advanceDropMotion(d,dt);
+  applyDropFlow(d,dt);
+  updateDropVisual(d);
+  if(Math.hypot(d.x-P.x,d.y-P.y,d.z-P.z)<1.45){
+   give(d.id,d.n);
+   scene.remove(d.g);
+   droppedItems.splice(i,1);
+   toast((ITEMS[d.id]?.name||'アイテム')+'を拾った');
+  }
  }
 }
