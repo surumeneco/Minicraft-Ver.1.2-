@@ -81,8 +81,24 @@ function renderPlayerInventory(){
 }
 function consumeCraftSlots(need){for(const [id,n] of need){let left=n;for(let i=0;i<4&&left;i++)if(craftSlots[i]===id){craftSlots[i]=null;left--}}}
 function find2x2Recipe(){
-  const a=craftSlots.filter(Boolean); if(!a.length)return null;
-  for(const r of recipes){const req=[];for(let i=0;i<r[2].length;i+=2)req.push([r[2][i],r[2][i+1]]);const total=req.reduce((s,x)=>s+x[1],0);if(total!==a.length)continue;const aa={};a.forEach(x=>aa[x]=(aa[x]||0)+1);if(req.every(x=>(aa[x[0]]||0)===x[1]))return [r[0],req]}
+  const placed=craftSlots.filter(Boolean);
+  if(!placed.length)return null;
+  const counts={};
+  for(const id of placed)counts[id]=(counts[id]||0)+1;
+
+  for(const recipe of recipes){
+    const ingredients=recipe[2],required=[];
+    let total=0;
+    for(let i=0;i<ingredients.length;i+=2){
+      const id=ingredients[i],amount=ingredients[i+1];
+      required.push([id,amount]);
+      total+=amount;
+    }
+    if(total!==placed.length)continue;
+    if(required.every(([id,amount])=>(counts[id]||0)===amount)){
+      return [recipe[0],required];
+    }
+  }
   return null;
 }
 // 2x2クラフトへアイテムを投入する補助：インベントリ内アイテムをShiftクリック相当で追加
