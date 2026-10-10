@@ -3,18 +3,25 @@ const invBody=document.getElementById('invBody'), invTabs=document.getElementByI
 let invPage='all', craftSlots=Array.isArray(pendingCraftSlots)?Array.from({length:4},(_,i)=>Number.isInteger(pendingCraftSlots[i])&&pendingCraftSlots[i]>0?pendingCraftSlots[i]:null):[null,null,null,null];
 const INV_CATS=[['all','すべて'],['building','建材系'],['circuit','回路系'],['func','機能系'],['food','食料系'],['transport','輸送系'],['combat','戦闘・防御系'],['other','その他'],['inventory','インベントリ'],['world','ワールド']];
 const CIRCUIT=new Set([RED_DUST,RED_TORCH,REPEATER,LEVER,STONE_BUTTON,PRESSURE,PISTON,STICKY_PISTON,OBSERVER,DISPENSER,COMPARATOR,DROPPER,HOPPER,RED_LAMP,TARGET,nmid('レッドストーンブロック'),nmid('TNT'),I.redstone]),FUNC=new Set([CHEST,nmid('作業台'),nmid('かまど'),nmid('本棚'),I.bucket,I.waterBucket,I.lavaBucket,nmid('スポンジ')]);
-function itemCategory(id){
-  if(new Set([RAIL,POWERED_RAIL,DETECTOR_RAIL,ACTIVATOR_RAIL,I.rail,I.poweredRail,I.detectorRail,I.activatorRail,I.minecart]).has(id))return 'transport';
-  if(CIRCUIT.has(id))return 'circuit';
-  const q=ITEMS[id];
-  if(FUNC.has(id))return 'func';if(!q)return 'building';
-  if(q.type==='food')return 'food';
-  if(q.type==='weapon'||q.type==='armor'||q.type==='shield')return 'combat';
-  if(q.type==='transport')return 'transport';
-  if(q.type==='block')return 'building';
-  return 'other';
-}
+// Classification tables are initialized once; itemCategory is called for each inventory cell.
 const RAIL_ITEM_IDS=new Set([I.rail,I.poweredRail,I.detectorRail,I.activatorRail]);
+const TRANSPORT_IDS=new Set([RAIL,POWERED_RAIL,DETECTOR_RAIL,ACTIVATOR_RAIL,...RAIL_ITEM_IDS,I.minecart]);
+function itemCategory(id){
+  if(TRANSPORT_IDS.has(id))return 'transport';
+  if(CIRCUIT.has(id))return 'circuit';
+  if(FUNC.has(id))return 'func';
+  const item=ITEMS[id];
+  if(!item)return 'building';
+  switch(item.type){
+    case 'food': return 'food';
+    case 'weapon':
+    case 'armor':
+    case 'shield': return 'combat';
+    case 'transport': return 'transport';
+    case 'block': return 'building';
+    default: return 'other';
+  }
+}
 function allAvailableIds(){return [...new Set([...PL,...Object.keys(ITEMS).map(Number)])].filter(id=>id!=null&&!RAIL_ITEM_IDS.has(id))}
 function invIcon(id){return isItem(id)?itemIcon(id):icon(id)}
 function selectInvItem(id){
