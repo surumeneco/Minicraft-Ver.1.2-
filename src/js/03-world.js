@@ -223,11 +223,40 @@ function mesh(c){
  drop(c);c.m=mk(SS,mat);c.wm=mk(WS,wmat);c.gm=mkGrass(GS);c.v=true;if(firstMesh)remeshNb(c)}
 // このチャンクが出来たことで、境界の面が不要になった(または必要になった)隣を作り直す
 function remeshNb(c){for(const[dx,dz,bit]of[[-1,0,2],[1,0,8],[0,-1,4],[0,1,1]]){const o=C.get(ck(c.cx+dx,c.cz+dz));if(o&&o.v&&(o.miss&bit))mesh(o)}}
-function setB(x,y,z,b){const cx=x>>4,cz=z>>4,c=getC(cx,cz);if(!c||y<0||y>=H)return;const lx=x&15,lz=z&15,i=idx(lx,y,lz);
- const old0=c.d[i];if(old0===b)return;c.d[i]=b;blockLightDirty=true;if((typeof isLightSource==='function')&&(isLightSource(old0)||isLightSource(b))){for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++)lightMeshDirty.add(ck(cx+dx,cz+dz))}if(b&&y+1>c.top)c.top=y+1;rsReg(x,y,z,old0,b);fluidDirty(x,y,z,old0,b);
- let e=edits.get(ck(cx,cz));if(!e)edits.set(ck(cx,cz),e=new Map());e.set(i,b);
- mesh(c);const nn=(a,q)=>{const o=C.get(ck(a,q));if(o&&o.v)mesh(o)};
- if(lx==0)nn(cx-1,cz);if(lx==15)nn(cx+1,cz);if(lz==0)nn(cx,cz-1);if(lz==15)nn(cx,cz+1)}
+function setB(x,y,z,b){
+ const cx=x>>4,cz=z>>4,c=getC(cx,cz);
+ if(!c||y<0||y>=H)return;
+ const lx=x&15,lz=z&15,i=idx(lx,y,lz),old=c.d[i];
+ if(old===b)return;
+ writeBlockState(c,cx,cz,i,y,old,b);
+ rsReg(x,y,z,old,b);
+ fluidDirty(x,y,z,old,b);
+ rememberBlockEdit(cx,cz,i,b);
+ mesh(c);
+ const nn=(a,q)=>{const o=C.get(ck(a,q));if(o&&o.v)mesh(o)};
+ if(lx===0)nn(cx-1,cz);
+ if(lx===15)nn(cx+1,cz);
+ if(lz===0)nn(cx,cz-1);
+ if(lz===15)nn(cx,cz+1);
+}
+// Shared primitive: mutates chunk bytes/light state but does not call subsystem hooks.
+// Both update paths preserve their existing hook ordering and mesh policy.
+function writeBlockState(c,cx,cz,i,y,old,b){
+ c.d[i]=b;
+ blockLightDirty=true;
+ if(typeof isLightSource==='function'&&(isLightSource(old)||isLightSource(b))){
+  for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+   lightMeshDirty.add(ck(cx+dx,cz+dz));
+  }
+ }
+ if(b&&y+1>c.top)c.top=y+1;
+}
+function rememberBlockEdit(cx,cz,i,b){
+ const key=ck(cx,cz);
+ let e=edits.get(key);
+ if(!e)edits.set(key,e=new Map());
+ e.set(i,b);
+}
 let queue=[],lcx=1e9,lcz=1e9,lastStreamRD=RD;
 function stream(force){
  const pcx=Math.floor(P.x)>>4,pcz=Math.floor(P.z)>>4;

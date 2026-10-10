@@ -8,11 +8,25 @@ loaded=load();
 for(let i=0;i<hot.length;i++)if(hot[i]===22)hot[i]=1;
 delete invCount[22]; blockLightDirty=true;
 if(loaded){try{scanRS()}catch(e){console.warn('scanRS',e)}}else{respawn();give(4,12);give(8,24);give(I.stick,12);give(I.iron,8);give(I.diamond,4);give(I.redstone,16);give(1,16);give(3,16);give(I.shield,1)}
-function applyChanges(ch){const sc=new Set();
- for(const[x,y,z,v]of ch){const cx=x>>4,cz=z>>4,c=getC(cx,cz);if(!c||y<0||y>=H)continue;const lx=x&15,lz=z&15,i=idx(lx,y,lz),old=c.d[i];if(old===v)continue;
-  c.d[i]=v;blockLightDirty=true;if(typeof isLightSource==='function'&&(isLightSource(old)||isLightSource(v))){for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++)lightMeshDirty.add(ck(cx+dx,cz+dz))}if(v&&y+1>c.top)c.top=y+1;let e=edits.get(ck(cx,cz));if(!e)edits.set(ck(cx,cz),e=new Map());e.set(i,v);rsReg(x,y,z,old,v);fluidDirty(x,y,z,old,v);sc.add(c);
-  if(lx==0)sc.add(getC(cx-1,cz));if(lx==15)sc.add(getC(cx+1,cz));if(lz==0)sc.add(getC(cx,cz-1));if(lz==15)sc.add(getC(cx,cz+1))}
- sc.forEach(c=>{if(c&&c.v)mesh(c)})}
+function applyChanges(ch){
+ const chunksToRemesh=new Set();
+ for(const [x,y,z,b] of ch){
+  const cx=x>>4,cz=z>>4,c=getC(cx,cz);
+  if(!c||y<0||y>=H)continue;
+  const lx=x&15,lz=z&15,i=idx(lx,y,lz),old=c.d[i];
+  if(old===b)continue;
+  writeBlockState(c,cx,cz,i,y,old,b);
+  rememberBlockEdit(cx,cz,i,b);
+  rsReg(x,y,z,old,b);
+  fluidDirty(x,y,z,old,b);
+  chunksToRemesh.add(c);
+  if(lx===0)chunksToRemesh.add(getC(cx-1,cz));
+  if(lx===15)chunksToRemesh.add(getC(cx+1,cz));
+  if(lz===0)chunksToRemesh.add(getC(cx,cz-1));
+  if(lz===15)chunksToRemesh.add(getC(cx,cz+1));
+ }
+ chunksToRemesh.forEach(c=>{if(c&&c.v)mesh(c)});
+}
 const contAt=(x,y,z)=>{const bs=getB(x,y,z)&255;if(!CONTB.has(bs))return null;const k=rk(x,y,z);return chests[k]||(chests[k]=Array(CONTB.get(bs)).fill(null))};
 function contInsert(a,id,n){let left=n;for(const sl of a)if(sl&&sl[0]===id&&sl[1]<64&&left){const m=Math.min(64-sl[1],left);sl[1]+=m;left-=m}
  for(let i=0;i<a.length&&left;i++)if(!a[i]){const m=Math.min(64,left);a[i]=[id,m];left-=m}return left===0}
