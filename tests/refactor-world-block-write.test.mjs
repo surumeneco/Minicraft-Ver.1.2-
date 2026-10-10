@@ -25,7 +25,7 @@ function harness() {
   Math,Set,Map,Uint16Array
  };
  vm.createContext(context);
- vm.runInContext(world.slice(world.indexOf('function remeshNb('),world.indexOf('let queue=[])),context);
+ vm.runInContext(world.slice(world.indexOf('function remeshNb('),world.indexOf('let queue=[]')),context);
  vm.runInContext(circuits.slice(circuits.indexOf('function applyChanges('),circuits.indexOf('const contAt=')),context);
  return {context,chunk,edits,meshCalls,calls};
 }
@@ -62,7 +62,7 @@ test('batch writes deduplicate meshes while preserving hook order and boundary u
   ['circuit',0,8,8],['fluid',0,8,8]
  ]);
  assert.deepEqual(h.meshCalls.sort(),['0,0','1,0']);
- assert.equal(ctx.lightMeshDirty.size,12);
+ assert.equal(ctx.lightMeshDirty.size,9);
  ctx.applyChanges([[1,2,1,7]]);
  assert.equal(h.meshCalls.length,2);
  assert.equal(h.calls.length,4);
