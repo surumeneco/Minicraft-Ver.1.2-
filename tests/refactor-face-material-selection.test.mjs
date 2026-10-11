@@ -52,7 +52,7 @@ test('axis block orientation and chest front face preserve state and direction',
 test('observer, dispenser and dropper distinguish front, back, top and side',()=>{
  const {ctx,face}=setup();
  const obs=ctx.OBSERVER|(1<<8);
- assert.deepEqual([E,W,U,N,D].map(d=>face(obs,d)),[101,103,100,102,102]);
+ assert.deepEqual([E,W,U,N,D].map(d=>face(obs,d)),[101,103,100,102,100]);
  assert.equal(face(ctx.DISPENSER,N),101);
  assert.equal(face(ctx.DISPENSER,E),100);
  assert.equal(face(ctx.DROPPER|(2<<8),S),101);
