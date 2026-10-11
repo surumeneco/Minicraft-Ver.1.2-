@@ -264,13 +264,52 @@ function rememberBlockEdit(cx,cz,i,b){
  e.set(i,b);
 }
 let queue=[],lcx=1e9,lcz=1e9,lastStreamRD=RD;
+
+// Build the pending chunk list in its original distance-sorted order.
+function makeStreamQueue(pcx,pcz){
+ queue=[];
+ for(let dz=-RD;dz<=RD;dz++){
+  for(let dx=-RD;dx<=RD;dx++){
+   const d2=dx*dx+dz*dz;
+   if(d2>RD*RD+RD)continue;
+   const cx=pcx+dx,cz=pcz+dz,c=C.get(ck(cx,cz));
+   if(!c||!c.v)queue.push([d2,cx,cz]);
+  }
+ }
+ queue.sort((a,b)=>a[0]-b[0]);
+}
+
+// Keep the original two distance thresholds and cached-chunk invalidation.
+function retireDistantChunks(pcx,pcz){
+ for(const [key,c] of C){
+  const dd=Math.max(Math.abs(c.cx-pcx),Math.abs(c.cz-pcz));
+  if(dd>RD+3){
+   drop(c);
+   C.delete(key);
+   _ck=-1;
+  }else if(dd>RD+1&&c.v){
+   drop(c);
+   c.v=false;
+  }
+ }
+}
+
+function drawQueuedChunks(force){
+ const start=performance.now();
+ let processed=0;
+ while(processed<queue.length){
+  const [,cx,cz]=queue[processed++],chunk=getC(cx,cz);
+  if(chunk&&!chunk.v)mesh(chunk);
+  if(!force&&performance.now()-start>4)break;
+ }
+ if(processed)queue=queue.slice(processed);
+}
 function stream(force){
  const pcx=Math.floor(P.x)>>4,pcz=Math.floor(P.z)>>4;
- if(pcx!=lcx||pcz!=lcz||RD!==lastStreamRD){lcx=pcx;lcz=pcz;lastStreamRD=RD;queue=[];
-  for(let dz=-RD;dz<=RD;dz++)for(let dx=-RD;dx<=RD;dx++){const d2=dx*dx+dz*dz;if(d2>RD*RD+RD)continue;
-   const c=C.get(ck(pcx+dx,pcz+dz));if(!c||!c.v)queue.push([d2,pcx+dx,pcz+dz])}
-  queue.sort((a,b)=>a[0]-b[0]);
-  for(const[k,c]of C){const dd=Math.max(Math.abs(c.cx-pcx),Math.abs(c.cz-pcz));
-   if(dd>RD+3){drop(c);C.delete(k);_ck=-1}else if(dd>RD+1&&c.v){drop(c);c.v=false}}}
- const t0=performance.now();
- let qi=0;while(qi<queue.length){const[,cx,cz]=queue[qi++],c=getC(cx,cz);if(c&&!c.v)mesh(c);if(!force&&performance.now()-t0>4)break}if(qi)queue=queue.slice(qi)}
+ if(pcx!=lcx||pcz!=lcz||RD!==lastStreamRD){
+  lcx=pcx;lcz=pcz;lastStreamRD=RD;
+  makeStreamQueue(pcx,pcz);
+  retireDistantChunks(pcx,pcz);
+ }
+ drawQueuedChunks(force);
+}
