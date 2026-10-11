@@ -51,10 +51,22 @@ function hopperStep(c){const arr=contAt(c.x,c.y,c.z),f=c.s===0?5:c.s-1,dr=f===5?
 // ---- ピストン ----
 const IMM=v=>{const bs=v&255;return bs===10||bs===18||bs===PHEAD||CONTB.has(bs)||((bs===PISTON||bs===STICKY_PISTON)&&((v>>8)&8))};
 const PLG=new THREE.BoxGeometry(1,1,.25),SHG=new THREE.BoxGeometry(.25,.25,1),mOch=new THREE.MeshLambertMaterial({color:0xb8924a}),mGrn=new THREE.MeshLambertMaterial({color:0x7cc46a}),mWd=new THREE.MeshLambertMaterial({color:0x9c7a45});
+// Determine the chain before starting the animation; null means extension is blocked.
+function collectPistonPushLine(c,D){
+ const line=[];let x=c.x+D[0],y=c.y+D[1],z=c.z+D[2];
+ for(let i=0;i<14;i++){
+  const v=getB(x,y,z);
+  if(!v||FL[v&255])break;
+  if(IMM(v)||y<=0||y>=H-1)return null;
+  line.push([x,y,z,v]);
+  if(line.length>12)return null;
+  x+=D[0];y+=D[1];z+=D[2];
+ }
+ if(y<1||y>=H)return null;
+ return line;
+}
 function pistonTick(c,want){const s=c.s,f=s&7,ext=!!(s&8);if(c.busy)return;const D=f<4?D4[f]:D6[f];
- if(want&&!ext){const line=[];let x=c.x+D[0],y=c.y+D[1],z=c.z+D[2];
-  for(let i=0;i<14;i++){const v=getB(x,y,z);if(!v||FL[v&255])break;if(IMM(v)||y<=0||y>=H-1)return;line.push([x,y,z,v]);if(line.length>12)return;x+=D[0];y+=D[1];z+=D[2]}
-  if(y<1||y>=H)return;startAnim(c,'ext',D,line)}
+ if(want&&!ext){const line=collectPistonPushLine(c,D);if(line)startAnim(c,'ext',D,line)}
  else if(!want&&ext)startAnim(c,'ret',D,null)}
 function startAnim(c,type,D,line){c.busy=true;const g=new THREE.Group(),pl=new THREE.Mesh(PLG,(c.bs===STICKY_PISTON)?mGrn:mOch),sh=new THREE.Mesh(SHG,mWd);g.add(pl,sh);g.position.set(c.x+.5,c.y+.5,c.z+.5);g.lookAt(new THREE.Vector3(c.x+.5+D[0],c.y+.5+D[1],c.z+.5+D[2]));scene.add(g);anims.push({c,type,D,line,t:0,g,pl,sh})}
 function pushEnt(cells,D){for(const[cx,cy,cz]of cells){const inC=(x,y,z)=>Math.floor(x)===cx&&Math.floor(z)===cz&&y>cy-1&&y<cy+1;
