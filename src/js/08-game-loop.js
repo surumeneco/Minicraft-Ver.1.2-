@@ -10,6 +10,7 @@ let circuitOn=false,circuitT=0;
 function crouchHasSupport(x,y,z){const yy=Math.floor(y-.08),r=.27;return [[x-r,z-r],[x+r,z-r],[x-r,z+r],[x+r,z+r],[x,z]].some(([px,pz])=>solid(getB(Math.floor(px),yy,Math.floor(pz))));}
 
 for(const[dx,dz]of[[0,0],[1,0],[-1,0],[0,1],[0,-1]]){const c=getC((Math.floor(P.x)>>4)+dx,(Math.floor(P.z)>>4)+dz);if(c&&!c.v)mesh(c)}
+function formatHudText(crouching,swimDash,dashing,ix,iz){return (flying?'✈飛行中  ':swimDash?'泳ぎ中  ':crouching?(shieldUp?'盾を構え中  ':'しゃがみ中  '):dashing?'ダッシュ  ':(keys.KeyW&&keys.KeyR&&hunger<=3?'空腹でダッシュ不可  ':''))+`X:${ix} Y:${Math.floor(P.y)} Z:${iz}  FPS:${fps|0}  チャンク:${C.size}  装備:${equipped.weapon?ITEMS[equipped.weapon].name:'素手'}  回路:${circuitOn?'ON':'OFF'}`;}
 function loop(now){
  if(pauseMenuOpen){last=now;ren.render(scene,cam);requestAnimationFrame(loop);return}
  const dt=Math.min(.05,(now-last)/1000);last=now;fps+=(1/Math.max(dt,.001)-fps)*.05;
@@ -39,7 +40,7 @@ function loop(now){
  if(nu!=uw){uw=nu;uwOverlay.style.opacity=uw?1:0;if(CLD.m)CLD.m.visible=!uw;const c=uw?0x1d4a8c:0x87ceeb;scene.fog.color.set(c);scene.background.set(c);scene.fog.near=uw?.1:Math.min(35,Math.max(16,RD*16-10)-1);scene.fog.far=uw?24:Math.max(16,RD*16-10)}
  target=ray();if(target){hl.visible=true;hl.position.set(target.x+.5,target.y+.5,target.z+.5)}else hl.visible=false;
  updateDayNight(dt); updateBlockGlows(dt); circuitTick(dt);mobTick(dt);arrowTick(dt);cloudTick(dt);dropTick(dt);stream();
- if(++fr%15==0)hud.textContent=(flying?'✈飛行中  ':swimDash?'泳ぎ中  ':crouching?(shieldUp?'盾を構え中  ':'しゃがみ中  '):dashing?'ダッシュ  ':(keys.KeyW&&keys.KeyR&&hunger<=3?'空腹でダッシュ不可  ':''))+`X:${ix} Y:${Math.floor(P.y)} Z:${iz}  FPS:${fps|0}  チャンク:${C.size}  装備:${equipped.weapon?ITEMS[equipped.weapon].name:'素手'}  回路:${circuitOn?'ON':'OFF'}`;
+ if(++fr%15==0)hud.textContent=formatHudText(crouching,swimDash,dashing,ix,iz);
  ren.render(scene,cam);requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 
