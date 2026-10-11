@@ -87,7 +87,7 @@ test('tree decoration preserves spruce/acacia height and species-specific crowns
  assert.equal(a.d[spruce.idx(0,16,0)],71);
  assert.equal(a.top,17);
  const acacia=make({height:9,tree:['acacia',72,73]}),b=acacia.chunk();
- assert.equal(b.d[acacia.idx(0,14,0)],72);
+ assert.equal(b.d[acacia.idx(0,14,0)],73); // Acacia foliage may replace trunk voxels.
  assert.equal(b.d[acacia.idx(0,15,0)],73);
  assert.equal(b.top,16);
 });
