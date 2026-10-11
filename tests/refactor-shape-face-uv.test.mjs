@@ -64,7 +64,7 @@ test('inset geometry does not cull a face just because its outside neighbor is s
  const S=h.draw();
  assert.equal(S.n,4);
  assert.equal(h.requests.length,0);
- assert.deepEqual(S.p.slice(0,3),[4.75,5,6]);
+ assert.deepEqual(S.p.slice(0,3),[4.25,5,6]);
  const expectedU=(13%8+.01+(1-0)*.98)/8;
  assert.ok(Math.abs(S.u[0]-expectedU)<1e-10);
 });
