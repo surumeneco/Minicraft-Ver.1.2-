@@ -147,6 +147,19 @@ function shapeFaces(S,c,g,x,y,z,v,bt,j){
     if(AXB[bs]&&s>0&&s<3&&d[s===1?0:2]===0){if(s===1)[u,w]=d[2]?[py,px]:[pz,px];else[u,w]=d[0]?[py,pz]:[px,pz]}
     S.u.push(((t%CO)+.01+u*.98)/CO,(RW-1-Math.floor(t/CO)+.01+w*.98)/RW)}
    S.i.push(S.n,S.n+1,S.n+2,S.n,S.n+2,S.n+3);S.n+=4}}}
+// The solid, water and grass surfaces share geometry and placement rules.
+function createChunkSurfaceMesh(surface,material,chunk,withUV){
+ if(!surface.n)return null;
+ const geometry=new THREE.BufferGeometry();
+ geometry.setAttribute('position',new THREE.Float32BufferAttribute(surface.p,3));
+ geometry.setAttribute('color',new THREE.Float32BufferAttribute(surface.c,3));
+ if(withUV)geometry.setAttribute('uv',new THREE.Float32BufferAttribute(surface.u,2));
+ geometry.setIndex(surface.i);
+ const result=new THREE.Mesh(geometry,material);
+ result.position.set(chunk.cx*16,0,chunk.cz*16);
+ scene.add(result);
+ return result;
+}
 function mesh(c){
  const nbc=(a,b)=>{const o=C.get(ck(a,b));return o||((a<-LIM||a>=LIM||b<-LIM||b>=LIM)?null:0)};   // 未生成の隣=0(空気扱い) / ワールド外=null(壁)
  const cs=[nbc(c.cx-1,c.cz-1),nbc(c.cx,c.cz-1),nbc(c.cx+1,c.cz-1),nbc(c.cx-1,c.cz),c,nbc(c.cx+1,c.cz),nbc(c.cx-1,c.cz+1),nbc(c.cx,c.cz+1),nbc(c.cx+1,c.cz+1)];
@@ -215,11 +228,8 @@ function mesh(c){
     const[u,v]=uvOf(d,q[0],q[1],q[2]);
     S.u.push(((t%CO)+(u?.99:.01))/CO,(RW-1-Math.floor(t/CO)+(v?.99:.01))/RW)}
    S.i.push(S.n,S.n+1,S.n+2,S.n,S.n+2,S.n+3);S.n+=4}}
- const mk=(S,mt)=>{if(!S.n)return null;const geo=new THREE.BufferGeometry();
-  geo.setAttribute('position',new THREE.Float32BufferAttribute(S.p,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(S.c,3));
-  geo.setAttribute('uv',new THREE.Float32BufferAttribute(S.u,2));geo.setIndex(S.i);
-  const m=new THREE.Mesh(geo,mt);m.position.set(c.cx*16,0,c.cz*16);scene.add(m);return m};
- const mkGrass=S=>{if(!S.n)return null;const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(S.p,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(S.c,3));geo.setIndex(S.i);const m=new THREE.Mesh(geo,grassMat);m.position.set(c.cx*16,0,c.cz*16);scene.add(m);return m};
+ const mk=(S,mt)=>createChunkSurfaceMesh(S,mt,c,true);
+ const mkGrass=S=>createChunkSurfaceMesh(S,grassMat,c,false);
  drop(c);c.m=mk(SS,mat);c.wm=mk(WS,wmat);c.gm=mkGrass(GS);c.v=true;if(firstMesh)remeshNb(c)}
 // このチャンクが出来たことで、境界の面が不要になった(または必要になった)隣を作り直す
 function remeshNb(c){for(const[dx,dz,bit]of[[-1,0,2],[1,0,8],[0,-1,4],[0,1,1]]){const o=C.get(ck(c.cx+dx,c.cz+dz));if(o&&o.v&&(o.miss&bit))mesh(o)}}
