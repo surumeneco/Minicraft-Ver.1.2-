@@ -122,18 +122,53 @@ function uvOf(d,px,py,pz){return d[1]>0?[px,1-pz]:d[1]<0?[px,pz]:d[0]>0?[1-pz,py
 const AXB=new Uint8Array(256);for(const k in NMS){const n=NMS[k];if(n.endsWith('の原木')||n.endsWith('幹')||n==='竹ブロック'||n==='干し草の俵'||n==='骨ブロック')AXB[k]=1}AXB[4]=1;
 for(let i=1;i<256;i++)if(AXB[i])FULLO.add(i);
 const di=d=>d[2]<0?0:d[0]>0?1:d[2]>0?2:d[0]<0?3:d[1]>0?4:5;
-function occl(nb){return nb&&!FL[nb&255]&&!TR.has(nb)&&!THIN[nb&255]&&(nb<256?(!RSF[nb]||FULLO.has(nb)):FULLO.has(nb&255))}
-function pickTile(v,d,bt,alt){const bs=v&255,s=v>>8,k=di(d);if(alt)return bt[3];
+function occl(nb){
+ if(!nb)return nb;
+ const id=nb&255;
+ if(FL[id]||TR.has(nb)||THIN[id])return false;
+ if(nb<256)return !RSF[nb]||FULLO.has(nb);
+ return FULLO.has(id);
+}
+function pickTile(v,d,bt,alt){
+ const bs=v&255,s=v>>8,k=di(d);
+ if(alt)return bt[3];
  if(AXB[bs]&&s>0&&s<3)return d[s===1?0:2]!==0?bt[0]:bt[1];
- if(bs===CHEST&&s>=29&&!d[1]&&k===s-29)return bt[3];
- if(bs===OBSERVER){const f=s&3;if(k===f)return bt[1];if(k===((f+2)&3))return bt[3];return d[1]?bt[0]:bt[2]}
- if(bs===DISPENSER||bs===DROPPER)return k===(s&3)?bt[1]:bt[0];
- if(bs===PISTON||bs===STICKY_PISTON){const f=s&7,opp=f<4?(f+2)&3:f^1;if(k===f)return(s&8)?bt[2]:bt[0];if(k===opp)return bt[2];return f>=4?bt[1]:bt[3]}
- if(bs===PHEAD){const f=s&7;return k===f?((s&8)?bt[3]:bt[0]):bt[1]}
- if(bs===RED_LAMP&&(s&1))return bt[3];
- if(bs===REPEATER&&(s&16)&&d[1]>0)return bt[3];
- if(bs===COMPARATOR&&(s&4)&&d[1]>0)return bt[3];
- return d[1]>0?bt[0]:d[1]<0?bt[2]:bt[1]}
+ switch(bs){
+  case CHEST:
+   if(s>=29&&!d[1]&&k===s-29)return bt[3];
+   break;
+  case OBSERVER:{
+   const f=s&3;
+   if(k===f)return bt[1];
+   if(k===((f+2)&3))return bt[3];
+   return d[1]?bt[0]:bt[2];
+  }
+  case DISPENSER:
+  case DROPPER:
+   return k===(s&3)?bt[1]:bt[0];
+  case PISTON:
+  case STICKY_PISTON:{
+   const f=s&7,opp=f<4?(f+2)&3:f^1;
+   if(k===f)return(s&8)?bt[2]:bt[0];
+   if(k===opp)return bt[2];
+   return f>=4?bt[1]:bt[3];
+  }
+  case PHEAD:{
+   const f=s&7;
+   return k===f?((s&8)?bt[3]:bt[0]):bt[1];
+  }
+  case RED_LAMP:
+   if(s&1)return bt[3];
+   break;
+  case REPEATER:
+   if((s&16)&&d[1]>0)return bt[3];
+   break;
+  case COMPARATOR:
+   if((s&4)&&d[1]>0)return bt[3];
+   break;
+ }
+ return d[1]>0?bt[0]:d[1]<0?bt[2]:bt[1];
+}
 function shapeFaceTouchesBoundary(d,x0,y0,z0,x1,y1,z1){
  return (d[0]==1&&x1==1)||(d[0]==-1&&x0==0)||
   (d[1]==1&&y1==1)||(d[1]==-1&&y0==0)||
