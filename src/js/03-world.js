@@ -53,11 +53,8 @@ function replayChunkEdits(d,top,key){
  if(e)e.forEach((b,i)=>{d[i]=b;const y=(i>>8);if(b&&y+1>top)top=y+1});
  return top;
 }
-function genChunk(cx,cz){
- const d=new Uint16Array(256*H),X0=cx*16,Z0=cz*16;let top=1;
- for(let lz=0;lz<16;lz++)for(let lx=0;lx<16;lx++){
-  top=Math.max(top,fillTerrainColumn(d,lx,lz,X0,Z0));
- }
+// Decorations are applied after terrain columns, before saved world edits.
+function decorateChunkTrees(d,top,X0,Z0){
  const set=(x,y,z,b,soft)=>{const lx=x-X0,lz=z-Z0;if(lx<0||lz<0||lx>15||lz>15)return;const i=idx(lx,y,lz);if(soft&&d[i])return;d[i]=b;if(y+1>top)top=y+1};
  for(let tz=Z0-1;tz<Z0+17;tz++)for(let tx=X0-1;tx<X0+17;tx++){
   const tr=biomeTree(tx,tz);if(!tr)continue;
@@ -93,6 +90,14 @@ function genChunk(cx,cz){
     }
    }
   }}
+ return top;
+}
+function genChunk(cx,cz){
+ const d=new Uint16Array(256*H),X0=cx*16,Z0=cz*16;let top=1;
+ for(let lz=0;lz<16;lz++)for(let lx=0;lx<16;lx++){
+  top=Math.max(top,fillTerrainColumn(d,lx,lz,X0,Z0));
+ }
+ top=decorateChunkTrees(d,top,X0,Z0);
  top=replayChunkEdits(d,top,ck(cx,cz));
  return{d,top,cx,cz,v:false,m:null,wm:null}}
 function getC(cx,cz){if(cx<-LIM||cx>=LIM||cz<-LIM||cz>=LIM)return null;const k=ck(cx,cz);let c=C.get(k);if(!c){c=genChunk(cx,cz);C.set(k,c);try{blockLightDirty=true}catch(_e){}}return c}
