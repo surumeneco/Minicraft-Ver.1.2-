@@ -7,8 +7,9 @@ const src=readFileSync('src/js/06-circuits.js','utf8');
 const tick=src.indexOf('function rsTick(');
 const begin=src.indexOf('case COMPARATOR:{const f=s&3,',tick);
 const end=src.indexOf('case OBSERVER:{',begin);
-assert.ok(tick>=0&&(helper>=0||(begin>=0&&end>begin)));
 const helper=src.indexOf('function calculateComparatorOutput(');
+assert.ok(tick>=0&&(helper>=0||(begin>=0&&end>begin)));
+
 const code=helper>=0
   ? src.slice(helper,tick)+'\nfunction output(c,x,y,z,s){return calculateComparatorOutput(c,x,y,z,s)}'
   : 'function output(c,x,y,z,s){switch(c.bs){'+src.slice(begin,end)+'}return c.out}';
