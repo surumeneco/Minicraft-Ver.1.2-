@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`（2026-10-11確認）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `e21cbb9676f93ac4006098be212cb8b4fb975bd0`（2026-10-11）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -13,11 +13,11 @@
 | 1 | Block ID/状態の境界（01, 03, 05, 06, 07） | 8bit ID/高位状態の契約をテスト化し、基礎ヘルパーを導入。今後の全呼出箇所統一は未着手 | 一部完了（blockBaseId/blockState） |
 | 2 | メッシュの頂点色・照明・AO（03, 05） | 頂点色の角AO・ブロック光、光源探索・減衰伝播を分離済。atlas UV更新などは残存 | 一部完了（meshVertexColor/collectBlockLightSources/propagateBlockLight） |
 | 3 | 地形生成・装飾（03） | 地形列・樹木装飾・保存済み編集の適用を独立化。鉱石・洞窟、草花の細分化は残存 | 一部完了（fillTerrainColumn/decorateChunkTrees/replayChunkEdits） |
-| 4 | 回路・機構（06） | コンテナ格納と16パスのダスト信号伝播を分離。回路更新の他分岐、ホッパー・ピストン・TNT・アニメーションは残存 | 一部完了（contInsert/spreadDustLevels） |
-| 5 | Mob・戦闘・投射物（05） | 敵対攻撃・遠距離攻撃・徘徊の判断を物理移動から分離。物理移動・被ダメージ・スポーン・投射物は残存 | 一部完了（chooseMobSpeed） |
+| 4 | 回路・機構（06） | コンテナ格納、ダスト信号伝播、ピストン押し出し探索を分離。信号出力・ホッパー・ピストンアニメーション・TNTは残存 | 一部完了（contInsert/spreadDustLevels/collectPistonPushLine） |
+| 5 | Mob・戦闘・投射物（05） | 行動判断・Mob移動物理・矢の移動/命中処理を分離。被ダメージ・スポーン・Mob描画・投射物の生成は残存 | 一部完了（chooseMobSpeed/advanceMobPhysics/advanceArrowMotion/resolveArrowCollision） |
 | 6 | 移動・入力・ゲームループ（04-1, 08） | HUD文字列の優先順位・表示を抽出。キー状態・移動・衝突・HUD更新タイミング・フレーム更新は残存 | 一部完了（formatHudText） |
 | 7 | 所持品・クラフト・UI（04-0, 09） | UI描画と状態更新を分離。所持数不変条件、保存互換性、各クリック動作を検証 | 未着手 |
-| 8 | リソースパック（10） | ファイル別名の優先順位・タイルと色付けフラグの選択を分離。ZIP解析・画像適用・atlas更新/復元は残存 | 一部完了（collectPackHits） |
+| 8 | リソースパック（10） | テクスチャ別名の選択とZIP中央ディレクトリの走査を分離。DEFLATE展開・画像適用・atlas更新/復元は残存 | 一部完了（collectPackHits/scanZipBlockEntries） |
 | 9 | テクスチャ・設定・起動（01, 02, 11） | 設定の読込・数値範囲/型の正規化を関数に抽出。ノイズ・生成画像・DOM反映・起動順は残存 | 一部完了（hydrateSettings） |
 
 ## 先行成果（本計画以前）
@@ -64,3 +64,20 @@
 5. 描画マテリアル・設定UI・起動初期化の連携テスト。
 
 実機未検証: WebGL表示、実際のゲーム操作、古い実セーブデータ、ZIPファイルとブラウザのDecompressionStream互換。
+
+## 追加実施：回路、Mob、ZIP、投射物（2026-10-11）
+
+- `feature/refactor-piston-push-selection`: `collectPistonPushLine()` を追加。押し出し順、上限12個、移動不可、液体、高度境界、格納を回帰テストで確認。
+- `feature/refactor-mob-motion-physics`: `advanceMobPhysics()` を追加。重力、水中浮力、流体加速度、衝突、自動ジャンプ、スライム反発を回帰テストで確認。
+- `feature/refactor-resource-pack-zip-scanner`: `scanZipBlockEntries()` を追加。ZIP内画像パス、名前の正規化、重複、未対応圧縮方式、EOCDなしのエラーを検証。**DEFLATE形式の実データ展開・破損ZIPの網羅的検証は未実施。**
+- `feature/refactor-arrow-motion-collision`: `advanceArrowMotion()` と `resolveArrowCollision()` を追加。重力、位置、Mob/プレイヤーへの命中、盾、ターゲットブロック、寿命を固定。
+
+### 続行の優先順位
+
+1. 回路更新：`rsTick()` 内のコンパレーター・リピーター・オブザーバー出力と、`hopperStep()`、`animTick()`、TNTの副作用を段階的に分離。
+2. プレイヤー移動：`loop()` の状態取得、衝突、カメラ、フレーム更新の分離とブラウザ実機の動作検証。
+3. インベントリ：`renderPlayerInventory()` からデータ選択・装備・2×2クラフト画面の構築を分離。
+4. リソースパック：DEFLATE展開・画像デコード・atlas更新・復元をそれぞれ検証して分離。
+5. ワールド地形/描画：洞窟、鉱石、植生、照明・テクスチャの既存数値と画像の検証を拡充。
+
+ブラウザ実機確認とCAT-TDD正式ゲートは未実施。CI成功は検証した範囲の挙動一致を示すもので、視覚的一致や既存セーブ全種の互換性を保証しない。
