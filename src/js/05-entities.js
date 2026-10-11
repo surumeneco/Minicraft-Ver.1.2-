@@ -89,13 +89,17 @@ function explode(m){const cx=Math.floor(m.x),cy=Math.floor(m.y+.5),cz=Math.floor
   ch.push([x,y,z,0])}
  applyChanges(ch);
  const d=Math.hypot(P.x-m.x,P.y-m.y,P.z-m.z);if(d<6){let dmg=Math.round((6-d)*3);if(shieldUp&&shieldFaces(m.x,m.z)){dmg=Math.round(dmg*.2);shieldFlash=.25}if(dmg>0)hurt(dmg)}rmMob(m)}
-function stepMob(m,dt){const T=m.T,dx=P.x-m.x,dz=P.z-m.z,dist=Math.hypot(dx,dz);let mv=0;m.t+=dt;
+// Separate targeting, attacks and idle wandering from mob physics.
+function chooseMobSpeed(m,dt,dx,dz,dist){const T=m.T;let mv=0;m.t+=dt;
  if(T.host&&dist<20&&Math.abs(P.y-m.y)<8){m.yaw=Math.atan2(dx,dz);mv=T.sp;
   if(T.cr){if(dist<2.6){mv=0;if(!m.fuse)m.fuse=1.4}else if(dist>4.5)m.fuse=0}
   else if(T.rng){if(dist<5)mv=-T.sp*.8;else if(dist<11)mv=0;m.sh-=dt;if(m.sh<=0&&dist<17){m.sh=1.6+Math.random()*.8;shoot(m)}}
   else if(dist<1.2&&Math.abs(P.y-m.y)<1.7){mv=0;m.atk-=dt;if(m.atk<=0){m.atk=1;if(shieldUp&&shieldFaces(m.x,m.z)){shieldFlash=.15}else hurt(3)}}}
  else{m.turn-=dt;if(m.turn<=0){m.turn=2+Math.random()*4;m.go=Math.random()<.6;m.yaw=Math.random()*6.283}
   mv=m.fleeT>0?T.sp*2:m.go?T.sp*.6:0;m.fleeT-=dt}
+ return mv;
+}
+function stepMob(m,dt){const T=m.T,dx=P.x-m.x,dz=P.z-m.z,dist=Math.hypot(dx,dz);const mv=chooseMobSpeed(m,dt,dx,dz,dist);
  if(m.fuse>0){m.fuse-=dt;m.g.scale.setScalar(1+Math.sin(m.fuse*30)*.08);if(m.fuse<=0){explode(m);return}}
  const r=T.w/2,h=T.h,iw=isW(getB(Math.floor(m.x),Math.floor(m.y+.3),Math.floor(m.z)));
  if(iw)m.vy=Math.min(m.vy+30*dt,2.5);else m.vy-=26*dt;if(m.vy<-30)m.vy=-30;
