@@ -25,7 +25,7 @@ test('stylesheet is unchanged from the legacy snapshot', () => {
 test('unchanged script sections match the legacy version', () => {
   const m = original.match(/<script>\n([\s\S]*?)\n<\/script><\/body><\/html>/);
   assert.ok(m);
-  const changed = new Set(["src/js/01-block-registry.js","src/js/02-renderer.js","src/js/03-world.js","src/js/04-0-player-ui.js","src/js/04-1-input.js","src/js/04-2-containers.js","src/js/04-3-dropped-items.js","src/js/05-entities.js","src/js/06-circuits.js","src/js/07-fluids.js","src/js/08-game-loop.js","src/js/09-inventory.js","src/js/10-resource-packs.js"]);
+  const changed = new Set(["src/js/01-block-registry.js","src/js/02-renderer.js","src/js/03-world.js","src/js/04-0-player-ui.js","src/js/04-1-input.js","src/js/04-2-containers.js","src/js/04-3-dropped-items.js","src/js/05-entities.js","src/js/06-circuits.js","src/js/07-fluids.js","src/js/08-game-loop.js","src/js/09-inventory.js","src/js/10-resource-packs.js","src/js/11-settings.js"]);
   const parts = scripts.map(p => readFileSync(p, 'utf8'));
   let cursor = 0;
   for (let i = 0; i < parts.length; i++) {
