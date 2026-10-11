@@ -52,5 +52,5 @@ test('passive mob chooses a new random wandering direction and speed',()=>{
  assert.equal(s.run(),2.4);
  assert.equal(s.m.turn,4);
  assert.equal(s.m.go,true);
- assert.equal(s.m.yaw,Math.PI);
+ assert.equal(s.m.yaw,3.1415);
 });
