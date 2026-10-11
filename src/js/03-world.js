@@ -134,19 +134,44 @@ function pickTile(v,d,bt,alt){const bs=v&255,s=v>>8,k=di(d);if(alt)return bt[3];
  if(bs===REPEATER&&(s&16)&&d[1]>0)return bt[3];
  if(bs===COMPARATOR&&(s&4)&&d[1]>0)return bt[3];
  return d[1]>0?bt[0]:d[1]<0?bt[2]:bt[1]}
+function shapeFaceTouchesBoundary(d,x0,y0,z0,x1,y1,z1){
+ return (d[0]==1&&x1==1)||(d[0]==-1&&x0==0)||
+  (d[1]==1&&y1==1)||(d[1]==-1&&y0==0)||
+  (d[2]==1&&z1==1)||(d[2]==-1&&z0==0);
+}
+// Preserve repeater/comparator rotation and axis-block orientation.
+function shapeFaceUV(bs,s,rp,d,px,py,pz){
+ let [u,w]=uvOf(d,px,py,pz);
+ if(rp&&d[1]>0){
+  const f=s&3;
+  if(f==1)[u,w]=[pz,px];
+  else if(f==2)[u,w]=[1-px,pz];
+  else if(f==3)[u,w]=[1-pz,1-px];
+ }
+ if(AXB[bs]&&s>0&&s<3&&d[s===1?0:2]===0){
+  if(s===1)[u,w]=d[2]?[py,px]:[pz,px];
+  else[u,w]=d[0]?[py,pz]:[px,pz];
+ }
+ return [u,w];
+}
 function shapeFaces(S,c,g,x,y,z,v,bt,j){
  const bs=v&255,s=v>>8,rp=(bs===REPEATER||bs===COMPARATOR),dk=bs===RED_DUST?.5+.7*(s/15):1;
  for(const[x0,y0,z0,x1,y1,z1,alt]of boxes(v,c.cx*16+x,y,c.cz*16+z,true)){
   for(const[d,cq,sh]of F){
-   if((d[0]==1&&x1==1)||(d[0]==-1&&x0==0)||(d[1]==1&&y1==1)||(d[1]==-1&&y0==0)||(d[2]==1&&z1==1)||(d[2]==-1&&z0==0)){
-    if(occl(g(x+d[0],y+d[1],z+d[2])))continue}
+   if(shapeFaceTouchesBoundary(d,x0,y0,z0,x1,y1,z1)&&
+      occl(g(x+d[0],y+d[1],z+d[2])))continue;
    const t=pickTile(v,d,bt,alt),k=sh*j*dk;
-   for(const q of cq){const px=q[0]?x1:x0,py=q[1]?y1:y0,pz=q[2]?z1:z0;S.p.push(x+px,y+py,z+pz);S.c.push(k,k,k);
-    let[u,w]=uvOf(d,px,py,pz);
-    if(rp&&d[1]>0){const f=s&3;if(f==1)[u,w]=[pz,px];else if(f==2)[u,w]=[1-px,pz];else if(f==3)[u,w]=[1-pz,1-px]}
-    if(AXB[bs]&&s>0&&s<3&&d[s===1?0:2]===0){if(s===1)[u,w]=d[2]?[py,px]:[pz,px];else[u,w]=d[0]?[py,pz]:[px,pz]}
-    S.u.push(((t%CO)+.01+u*.98)/CO,(RW-1-Math.floor(t/CO)+.01+w*.98)/RW)}
-   S.i.push(S.n,S.n+1,S.n+2,S.n,S.n+2,S.n+3);S.n+=4}}}
+   for(const q of cq){
+    const px=q[0]?x1:x0,py=q[1]?y1:y0,pz=q[2]?z1:z0;
+    S.p.push(x+px,y+py,z+pz);
+    S.c.push(k,k,k);
+    const[u,w]=shapeFaceUV(bs,s,rp,d,px,py,pz);
+    S.u.push(((t%CO)+.01+u*.98)/CO,(RW-1-Math.floor(t/CO)+.01+w*.98)/RW);
+   }
+   S.i.push(S.n,S.n+1,S.n+2,S.n,S.n+2,S.n+3);S.n+=4;
+  }
+ }
+}
 // The solid, water and grass surfaces share geometry and placement rules.
 function createChunkSurfaceMesh(surface,material,chunk,withUV){
  if(!surface.n)return null;
