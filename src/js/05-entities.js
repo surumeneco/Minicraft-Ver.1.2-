@@ -7,27 +7,33 @@ const shroomId=nmid('シュルームライト'), glowstoneId=nmid('グロウス�
 let lampGlowClock=0;
 function isLightSource(v){const id=v&255;return id===shroomId||id===glowstoneId||(id===RED_LAMP&&v>255);}
 function lightKey(x,y,z){return x+','+y+','+z}
-function rebuildBlockLight(){
- blockLightCache=new Map();const q=[];
- // Scan loaded world chunks for emissive blocks, seed at level 15.
+// Seed the light field from emissive blocks in loaded chunks.
+function collectBlockLightSources(){
+ const queue=[];
  for(const c of C.values()){if(!c||!c.d)continue;
   for(let y=0;y<c.top;y++)for(let z=0;z<16;z++)for(let x=0;x<16;x++){
    const v=c.d[x+16*(z+16*y)];if(!isLightSource(v))continue;
    const gx=c.cx*16+x,gz=c.cz*16+z,k=lightKey(gx,y,gz);
-   if((blockLightCache.get(k)||0)<15){blockLightCache.set(k,15);q.push([gx,y,gz,15])}
+   if((blockLightCache.get(k)||0)<15){blockLightCache.set(k,15);queue.push([gx,y,gz,15])}
   }
  }
- // Breadth-first propagation through the six axis-adjacent cells. Opaque
- // boundary blocks stop propagation; the strongest route wins.
- for(let head=0;head<q.length;head++){
-  const [x,y,z,l]=q[head];if(l<=1)continue;
+ return queue;
+}
+// Opaque cells block propagation; each step decreases light by one.
+function propagateBlockLight(queue){
+ for(let head=0;head<queue.length;head++){
+  const [x,y,z,l]=queue[head];if(l<=1)continue;
   for(const [dx,dy,dz] of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]){
    const nx=x+dx,ny=y+dy,nz=z+dz;if(ny<0||ny>=H)continue;
    const nc=C.get(ck(nx>>4,nz>>4));const v=nc?nc.d[idx(nx&15,ny,nz&15)]:0;if(v&&occl(v))continue;
    const nl=l-1,k=lightKey(nx,ny,nz);if(nl<=(blockLightCache.get(k)||0))continue;
-   blockLightCache.set(k,nl);q.push([nx,ny,nz,nl]);
+   blockLightCache.set(k,nl);queue.push([nx,ny,nz,nl]);
   }
  }
+}
+function rebuildBlockLight(){
+ blockLightCache=new Map();
+ propagateBlockLight(collectBlockLightSources());
  blockLightDirty=false;
 }
 function blockLightAt(x,y,z){if(!lightSystemReady)return 0;return (blockLightCache.get(lightKey(Math.floor(x),Math.floor(y),Math.floor(z)))||0)/15}
