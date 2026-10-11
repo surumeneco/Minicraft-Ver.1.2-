@@ -4,7 +4,8 @@ import vm from 'node:vm';
 import { test } from 'node:test';
 
 const source=readFileSync('src/js/07-fluids.js','utf8');
-const start=source.indexOf('function fluidTick(dt){');
+const helpers=source.indexOf('function fluidStepDue(');
+const start=helpers>=0?helpers:source.indexOf('function fluidTick(dt){');
 const end=source.indexOf('// ---- バケツ ----',start);
 assert.ok(start>=0&&end>start, 'fluid tick scheduler exists');
 const scheduler=source.slice(start,end);
