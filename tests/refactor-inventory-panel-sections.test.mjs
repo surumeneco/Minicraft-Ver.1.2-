@@ -91,7 +91,7 @@ test('craft output click consumes ingredients, grants result, clears slots and r
  assert.equal(output.children[1].textContent,'→ 完成品');
  output.children[0].onclick();
  assert.deepEqual(f.actions,[
-  ['consume',[[11,1]]],['give',99,undefined],['toast','完成品を作成しました'],['render']
+  ['consume',[[11,1]]],['give',99,undefined],['toast','完成品'],['render']
  ]);
  assert.deepEqual(Array.from(f.ctx.craftSlots),[null,null,null,null]);
 });
