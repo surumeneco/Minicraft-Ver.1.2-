@@ -220,6 +220,14 @@ function createChunkSurfaceMesh(surface,material,chunk,withUV){
  scene.add(result);
  return result;
 }
+// Preserve the original per-vertex AO samples and block-light boost.
+function meshVertexColor(c,g,x,y,z,q,d,k){
+ const vx=x+q[0],vy=y+q[1],vz=z+q[2];
+ const bl=blockLightAt(c.cx*16+vx+d[0]*.01,vy+d[1]*.01,c.cz*16+vz+d[2]*.01);
+ const cornerAO=(occl(g(x+(q[0]>.5?1:-1),y,z))?0.08:0)+(occl(g(x,y+(q[1]>.5?1:-1),z))?0.08:0)+(occl(g(x,y,z+(q[2]>.5?1:-1)))?0.08:0);
+ const shade=Math.min(1.8,1+bl*1.0)*Math.max(.72,1-cornerAO);
+ return k*shade;
+}
 function mesh(c){
  const nbc=(a,b)=>{const o=C.get(ck(a,b));return o||((a<-LIM||a>=LIM||b<-LIM||b>=LIM)?null:0)};   // 未生成の隣=0(空気扱い) / ワールド外=null(壁)
  const cs=[nbc(c.cx-1,c.cz-1),nbc(c.cx,c.cz-1),nbc(c.cx+1,c.cz-1),nbc(c.cx-1,c.cz),c,nbc(c.cx+1,c.cz),nbc(c.cx-1,c.cz+1),nbc(c.cx,c.cz+1),nbc(c.cx+1,c.cz+1)];
@@ -284,7 +292,7 @@ function mesh(c){
   for(const[d,cq,sh]of F){const nb=g(x+d[0],y+d[1],z+d[2]);
    if(fl){if(nb)continue}else if(occl(nb)||nb==b)continue;
    const t=d[1]>0?bt[0]:d[1]<0?bt[2]:bt[1],k=sh*j;
-   for(const q of cq){const vx=x+q[0],vy=y+q[1]-(fl&&d[1]>0?.1:0),vz=z+q[2];S.p.push(vx,vy,vz);const bl=blockLightAt(c.cx*16+vx+d[0]*.01,vy+d[1]*.01,c.cz*16+vz+d[2]*.01);const cornerAO=(occl(g(x+(q[0]>.5?1:-1),y,z))?0.08:0)+(occl(g(x,y+(q[1]>.5?1:-1),z))?0.08:0)+(occl(g(x,y,z+(q[2]>.5?1:-1)))?0.08:0);const shade=Math.min(1.8,1+bl*1.0)*Math.max(.72,1-cornerAO);S.c.push(k*shade,k*shade,k*shade);
+   for(const q of cq){const vx=x+q[0],vy=y+q[1]-(fl&&d[1]>0?.1:0),vz=z+q[2];S.p.push(vx,vy,vz);const shade=meshVertexColor(c,g,x,y,z,q,d,k);S.c.push(shade,shade,shade);
     const[u,v]=uvOf(d,q[0],q[1],q[2]);
     S.u.push(((t%CO)+(u?.99:.01))/CO,(RW-1-Math.floor(t/CO)+(v?.99:.01))/RW)}
    S.i.push(S.n,S.n+1,S.n+2,S.n,S.n+2,S.n+3);S.n+=4}}
