@@ -50,11 +50,13 @@ function renderWorldInfo(){
  ids.forEach(id=>{const e=document.createElement('div');e.className='it';e.style.aspectRatio='auto';e.style.minHeight='58px';e.innerHTML=invIcon(id)+`<span style="position:absolute;left:4px;right:4px;bottom:3px;font-size:10px;color:#fff;text-shadow:1px 1px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ITEMS[id]?.name||NM[id]||'アイテム'} × ${invCount[id]}</span>`;e.onclick=()=>selectInvItem(id);rows.appendChild(e)});
  invBody.appendChild(rows);
 }
-function renderPlayerInventory(){
+function renderInventoryEquipmentPanel(){
   const ep=document.createElement('div');ep.className='equipPanel';ep.innerHTML='<div class="invTitle">装備</div>';
   const names=[['weapon','武器'],['shield','盾（Shiftで構える）'],['helmet','ヘルメット'],['chest','チェストプレート'],['legs','レギンス'],['boots','ブーツ']];
   names.forEach(([k,n])=>{const id=equipped[k];const d=document.createElement('div');d.textContent=n+'：'+(id?ITEMS[id].name:'なし');ep.appendChild(d)});invBody.appendChild(ep);
+}
 
+function renderInventoryOwnedSlots(){
   const title=document.createElement('div');title.className='invTitle';title.textContent='インベントリ（3×9・27スロット）';invBody.appendChild(title);
   const pg=document.createElement('div');pg.className='playerInvGrid';
   const owned=Object.keys(invCount).map(Number).filter(id=>invCount[id]>0);
@@ -65,19 +67,28 @@ function renderPlayerInventory(){
     pg.appendChild(d);
   }
   invBody.appendChild(pg);
+}
 
+function renderInventoryHotbar(){
   const hbTitle=document.createElement('div');hbTitle.className='invTitle';hbTitle.textContent='ホットバー（プレイ中も使用）';invBody.appendChild(hbTitle);
   const hb=document.createElement('div');hb.className='inventoryHotbar';
   for(let i=0;i<9;i++){
     const id=hot[i];const d=document.createElement('div');d.className='slot hotSlot'+(i===sel?' selected':'');d.innerHTML=`<b>${i+1}</b>`+(id!=null?(isItem(id)?itemIcon(id):icon(id)):'');d.onclick=()=>{setSel(i);renderInventory()};hb.appendChild(d);
   }
   invBody.appendChild(hb);
+}
 
+function renderInventoryCrafting(){
   const ct=document.createElement('div');ct.className='invTitle';ct.textContent='2×2 クラフト';invBody.appendChild(ct);
   const cg=document.createElement('div');cg.className='craft2';craftSlots.forEach((id,i)=>{const d=document.createElement('div');d.className='slot';d.innerHTML=id?invIcon(id):'';d.title=id?'クリックで取り出す':'空き';d.onclick=()=>{if(id){give(id,1);craftSlots[i]=null;renderInventory()}};cg.appendChild(d)});invBody.appendChild(cg);
   const out=document.createElement('div');out.className='craftOut';const result=document.createElement('div');result.className='slot';const r=find2x2Recipe();if(r)result.innerHTML=invIcon(r[0]);result.onclick=()=>{if(r){consumeCraftSlots(r[1]);give(r[0]);craftSlots=[null,null,null,null];toast(ITEMS[r[0]]?.name||NM[r[0]]+'を作成しました');renderInventory()}};out.appendChild(result);const tx=document.createElement('span');tx.textContent=r?'→ '+(ITEMS[r[0]]?.name||NM[r[0]]):'→ レシピなし';out.appendChild(tx);invBody.appendChild(out);
   // クラフト欄の下にはレシピ一覧を表示しない。材料を2×2に入れて完成品だけを作れる仕様。
-
+}
+function renderPlayerInventory(){
+ renderInventoryEquipmentPanel();
+ renderInventoryOwnedSlots();
+ renderInventoryHotbar();
+ renderInventoryCrafting();
 }
 function consumeCraftSlots(need){for(const [id,n] of need){let left=n;for(let i=0;i<4&&left;i++)if(craftSlots[i]===id){craftSlots[i]=null;left--}}}
 function find2x2Recipe(){
