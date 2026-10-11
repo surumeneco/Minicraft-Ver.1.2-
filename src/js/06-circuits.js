@@ -25,8 +25,7 @@ function applyChanges(ch){
  chunksToRemesh.forEach(c=>{if(c&&c.v)mesh(c)});
 }
 const contAt=(x,y,z)=>{const bs=getB(x,y,z)&255;if(!CONTB.has(bs))return null;const k=rk(x,y,z);return chests[k]||(chests[k]=Array(CONTB.get(bs)).fill(null))};
-function contInsert(a,id,n){let left=n;for(const sl of a)if(sl&&sl[0]===id&&sl[1]<64&&left){const m=Math.min(64-sl[1],left);sl[1]+=m;left-=m}
- for(let i=0;i<a.length&&left;i++)if(!a[i]){const m=Math.min(64,left);a[i]=[id,m];left-=m}return left===0}
+function contInsert(a,id,n){return moveIntoChest(a,id,n)===n}
 function contLevel(x,y,z){const bs=getB(x,y,z)&255;if(!CONTB.has(bs))return-1;const a=chests[rk(x,y,z)];if(!a)return 0;let sum=0,any=0;for(const sl of a)if(sl){any=1;sum+=sl[1]/64}return any?Math.floor(sum/a.length*14)+1:0}
 function outAt(x,y,z,tx,tz){const v=getB(x,y,z),bs=v&255,s=v>>8,c=RS.get(rk(x,y,z));
  switch(bs){case RED_DUST:return DL.get(rk(x,y,z))||0;case RBLK:case RED_TORCH:return 15;case LEVER:return s&1?15:0;
