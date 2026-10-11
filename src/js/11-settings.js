@@ -3,7 +3,16 @@ const FOV_DEF=75,FOV_MIN=25,FOV_MAX=125,SENS_DEF=100,SENS_MIN=50,SENS_MAX=150,SE
 let sensMul=1;
 const RD_MIN=Math.max(1,RD_BASE-5),RD_MAX=RD_BASE+5;
 const cfg={fov:FOV_DEF,sens:SENS_DEF,bright:100,sprintFov:true,drawDist:RD_BASE};
-try{const j=JSON.parse(localStorage.getItem(SETK)||'null');if(j){cfg.fov=Math.max(FOV_MIN,Math.min(FOV_MAX,+j.fov||FOV_DEF));cfg.sens=Math.max(SENS_MIN,Math.min(SENS_MAX,+j.sens||SENS_DEF));cfg.bright=Math.max(50,Math.min(150,+j.bright||100));cfg.sprintFov=j.sprintFov!==false;cfg.drawDist=Math.max(RD_MIN,Math.min(RD_MAX,Number.isFinite(+j.drawDist)?+j.drawDist:RD_BASE))}}catch(e){}
+// Normalize persisted settings before applying visual side effects.
+function hydrateSettings(j){
+ if(!j)return;
+ cfg.fov=Math.max(FOV_MIN,Math.min(FOV_MAX,+j.fov||FOV_DEF));
+ cfg.sens=Math.max(SENS_MIN,Math.min(SENS_MAX,+j.sens||SENS_DEF));
+ cfg.bright=Math.max(50,Math.min(150,+j.bright||100));
+ cfg.sprintFov=j.sprintFov!==false;
+ cfg.drawDist=Math.max(RD_MIN,Math.min(RD_MAX,Number.isFinite(+j.drawDist)?+j.drawDist:RD_BASE));
+}
+try{hydrateSettings(JSON.parse(localStorage.getItem(SETK)||'null'))}catch(e){}
 function applyCfg(){cam.fov=cfg.fov;cam.updateProjectionMatrix();sensMul=cfg.sens/100;brightMul=cfg.bright/100;RD=Math.max(RD_MIN,Math.min(RD_MAX,cfg.drawDist|0));const far=Math.max(16,RD*16-10);scene.fog.near=Math.min(35,far-1);scene.fog.far=far;try{localStorage.setItem(SETK,JSON.stringify(cfg))}catch(e){}}
 {const box=document.querySelector('#pauseMenu .pauseBox'),before=document.getElementById('resumeBtn'),settingsBtn=document.getElementById('settingsBtn');
  if(box&&before&&settingsBtn){const p=document.createElement('div');p.id='settingsPanel';p.style.cssText='display:none;margin:10px 0;padding:8px 12px;background:rgba(0,0,0,.28);border-radius:6px;text-align:left;font-size:13px;max-height:55vh;overflow:auto';
