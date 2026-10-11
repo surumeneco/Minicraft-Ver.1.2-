@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `e21cbb9676f93ac4006098be212cb8b4fb975bd0`（2026-10-11）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `1de46ad0028c94546b9467d25f2a16b7ab3fccd5`（2026-10-11）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -13,10 +13,10 @@
 | 1 | Block ID/状態の境界（01, 03, 05, 06, 07） | 8bit ID/高位状態の契約をテスト化し、基礎ヘルパーを導入。今後の全呼出箇所統一は未着手 | 一部完了（blockBaseId/blockState） |
 | 2 | メッシュの頂点色・照明・AO（03, 05） | 頂点色の角AO・ブロック光、光源探索・減衰伝播を分離済。atlas UV更新などは残存 | 一部完了（meshVertexColor/collectBlockLightSources/propagateBlockLight） |
 | 3 | 地形生成・装飾（03） | 地形列・樹木装飾・保存済み編集の適用を独立化。鉱石・洞窟、草花の細分化は残存 | 一部完了（fillTerrainColumn/decorateChunkTrees/replayChunkEdits） |
-| 4 | 回路・機構（06） | コンテナ格納、ダスト信号伝播、ピストン押し出し探索を分離。信号出力・ホッパー・ピストンアニメーション・TNTは残存 | 一部完了（contInsert/spreadDustLevels/collectPistonPushLine） |
+| 4 | 回路・機構（06） | コンテナ格納、ダスト伝播、ピストン押し出し探索、ホッパー入出力、コンパレーター比較・減算を分離。リピーター・オブザーバー・ピストンアニメーション・TNTは残存 | 一部完了（hopperPushOutput/hopperPullInput/calculateComparatorOutput 等） |
 | 5 | Mob・戦闘・投射物（05） | 行動判断・Mob移動物理・矢の移動/命中処理を分離。被ダメージ・スポーン・Mob描画・投射物の生成は残存 | 一部完了（chooseMobSpeed/advanceMobPhysics/advanceArrowMotion/resolveArrowCollision） |
-| 6 | 移動・入力・ゲームループ（04-1, 08） | HUD文字列の優先順位・表示を抽出。キー状態・移動・衝突・HUD更新タイミング・フレーム更新は残存 | 一部完了（formatHudText） |
-| 7 | 所持品・クラフト・UI（04-0, 09） | UI描画と状態更新を分離。所持数不変条件、保存互換性、各クリック動作を検証 | 未着手 |
+| 6 | 移動・入力・ゲームループ（04-1, 08） | HUD文字列とプレイヤーの衝突・段差・着地を分離。キー状態・速度計算・カメラ・HUD更新時刻・フレーム更新は残存 | 一部完了（formatHudText/advancePlayerCollision） |
+| 7 | 所持品・クラフト・UI（04-0, 09） | 装備・所持品・ホットバー・2×2クラフトの画面生成を分離。所持品の状態更新・装備操作・クラフト検証と描画の依存整理は残存 | 一部完了（renderInventoryEquipmentPanel/OwnedSlots/Hotbar/Crafting） |
 | 8 | リソースパック（10） | テクスチャ別名の選択とZIP中央ディレクトリの走査を分離。DEFLATE展開・画像適用・atlas更新/復元は残存 | 一部完了（collectPackHits/scanZipBlockEntries） |
 | 9 | テクスチャ・設定・起動（01, 02, 11） | 設定の読込・数値範囲/型の正規化を関数に抽出。ノイズ・生成画像・DOM反映・起動順は残存 | 一部完了（hydrateSettings） |
 
@@ -81,3 +81,20 @@
 5. ワールド地形/描画：洞窟、鉱石、植生、照明・テクスチャの既存数値と画像の検証を拡充。
 
 ブラウザ実機確認とCAT-TDD正式ゲートは未実施。CI成功は検証した範囲の挙動一致を示すもので、視覚的一致や既存セーブ全種の互換性を保証しない。
+
+## 追加実施：ホッパー・コンパレーター・インベントリ・プレイヤー衝突（2026-10-11）
+
+- `feature/refactor-hopper-transfer`: `hopperDirection()`、`hopperPushOutput()`、`hopperPullInput()` を抽出。搬出優先、上部コンテナ優先、落下アイテムの逆順探索、コンテナ欠損・方向を回帰テストで固定。
+- `feature/refactor-comparator-output`: `calculateComparatorOutput()` を抽出。コンテナ信号優先、背面の代替入力、左右最大入力、比較・減算モードの値を固定。
+- `feature/refactor-inventory-panel-sections`: `renderPlayerInventory()` の装備・所持品・ホットバー・クラフト構築を4関数に分割。27/9/4スロット、表示順、各クリック操作を固定。通知文字列の既存の演算子優先順位も維持。
+- `feature/refactor-player-collision-step`: `advancePlayerCollision()` を抽出。移動、しゃがみ時の端判定、段差、水中の上昇、スライム、飛行解除を固定。
+
+### 次回以降の残作業
+
+1. 回路のリピーター遅延・オブザーバー検出、ピストンアニメーション、TNTの爆風・ドロップ・ノックバックを機能単位に分割。
+2. プレイヤー速度・水中判定・スタミナ/満腹度の進行とフレーム制御、Mobスポーン・被ダメージの分離。
+3. インベントリの状態更新・装備操作・2×2クラフトの責務整理とDOM統合テスト。
+4. ZIP DEFLATE展開・実画像のatlas適用/解除とテクスチャ・設定の再描画連携。
+5. 地形生成・描画処理の残存部分とブロック状態アクセサ利用の拡大。
+
+実機未検証の項目（WebGL描画、操作、既存セーブ、実ZIPデータ）とCAT-TDD正式ゲートは依然として未実施。
