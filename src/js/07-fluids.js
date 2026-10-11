@@ -22,40 +22,58 @@ function lavaReact(x,y,z,v,ch){const src=(v&255)===LA;
  if(FL[getB(x,y-1,z)&255]===1){ch.push([x,y-1,z,3]);return true}                      // 真上から溶岩が水に触れる → 水が石に
  if(D4.some(([dx,,dz])=>FL[getB(x+dx,y,z+dz)&255]===1)||FL[getB(x,y+1,z)&255]===1){ch.push([x,y,z,src?18:8]);return true}   // 溶岩源→黒曜石 / 溶岩流→丸石
  return false}
+// Resolve one fluid cell without changing source/flow/reaction priority.
 function fluidCell(k,x,y,z,ch){
  const v=getB(x,y,z),bs=v&255,fk=FL[bs];
  if(fk&&fk!==k+1)return;
  if(fk===k+1){
-  if(k===0)for(const[dx,dy,dz]of D6)if((getB(x+dx,y+dy,z+dz)&255)===SPG){spongeAbsorb(x+dx,y+dy,z+dz);return}
+  if(k===0&&absorbWaterNearSponge(x,y,z))return;
   if(k===1&&lavaReact(x,y,z,v,ch))return;
-  // 水源・マグマ源は落下口にあっても消したり流れブロックへ変換しない。
-  // まず1マス下へ「落下流」を作り、元の源はそのまま維持する。
   if(bs===SPW(k)){
-   const below=getB(x,y-1,z);
-   if((below&255)===0)ch.push([x,y-1,z,FLW(k)|(8<<8)]);
+   fillBelowSource(k,x,y,z,ch);
    return;
   }
-  // すでに落下流になっている液体も、真下が空気ならそのまま保持して下へ進ませる。
-  const below=getB(x,y-1,z);
-  if((below&255)===0){
-   if((v>>8)!==8)ch.push([x,y,z,FLW(k)|(8<<8)]);
-   ch.push([x,y-1,z,FLW(k)|(8<<8)]);
-   return;
-  }
-  const d=fdesired(k,x,y,z);
-  if(d===0)ch.push([x,y,z,0]);
-  else if(d!==(v>>8))ch.push([x,y,z,FLW(k)|(d<<8)]);
+  updateFlowCell(k,x,y,z,v,ch);
  }else if(v===0){
-  // 空セルは真上の同じ液体からだけ落下流を生成する。
-  // 1マス落下の境目で横流れと競合しないよう、落下を最優先する。
-  const above=getB(x,y+1,z),ab=above&255;
-  if(FL[ab]===k+1){
-   ch.push([x,y,z,FLW(k)|(8<<8)]);
-   return;
+  fillEmptyFluidCell(k,x,y,z,ch);
+ }
+}
+function absorbWaterNearSponge(x,y,z){
+ for(const [dx,dy,dz] of D6){
+  if((getB(x+dx,y+dy,z+dz)&255)===SPG){
+   spongeAbsorb(x+dx,y+dy,z+dz);
+   return true;
   }
-  const d=fdesired(k,x,y,z);
-  if(d>0)ch.push([x,y,z,FLW(k)|(d<<8)]);
- }}
+ }
+ return false;
+}
+// Source cells never convert to falling-flow blocks themselves.
+function fillBelowSource(k,x,y,z,ch){
+ if((getB(x,y-1,z)&255)===0){
+  ch.push([x,y-1,z,FLW(k)|(8<<8)]);
+ }
+}
+function updateFlowCell(k,x,y,z,v,ch){
+ const below=getB(x,y-1,z);
+ if((below&255)===0){
+  if((v>>8)!==8)ch.push([x,y,z,FLW(k)|(8<<8)]);
+  ch.push([x,y-1,z,FLW(k)|(8<<8)]);
+  return;
+ }
+ const strength=fdesired(k,x,y,z);
+ if(strength===0)ch.push([x,y,z,0]);
+ else if(strength!==(v>>8))ch.push([x,y,z,FLW(k)|(strength<<8)]);
+}
+function fillEmptyFluidCell(k,x,y,z,ch){
+ // Falling flow takes precedence over neighboring horizontal spread.
+ const above=getB(x,y+1,z);
+ if(FL[above&255]===k+1){
+  ch.push([x,y,z,FLW(k)|(8<<8)]);
+  return;
+ }
+ const strength=fdesired(k,x,y,z);
+ if(strength>0)ch.push([x,y,z,FLW(k)|(strength<<8)]);
+}
 function fluidStepDue(k,dt){
  FAC[k]+=dt;
  if(FAC[k]<FIV[k])return false;
