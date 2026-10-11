@@ -135,15 +135,38 @@ TNT tnt_top,tnt_side,tnt_bottom
 })();
 const TINT={g:[145,189,89],l:[119,171,47],p:[97,153,97],b:[128,167,85],w:[63,118,228]},PK='minicraft_pack';
 const FILES=new Set(['grass_block_side_overlay']);Object.values(FM).forEach(s=>s.split('|').forEach(x=>FILES.add(x.split('#')[0])));
-async function readZip(buf){const dv=new DataView(buf),u8=new Uint8Array(buf);let e=u8.length-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;if(e<0)throw new Error('zip');
- const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const out=new Map();
- for(let i=0;i<n;i++){if(dv.getUint32(p,true)!==0x02014b50)break;
-  const meth=dv.getUint16(p+10,true),csz=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true),name=new TextDecoder().decode(u8.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
-  const m=name.match(/textures\/block\/([^\/]+)\.png$/i);if(!m)continue;
-  const st=lo+30+dv.getUint16(lo+26,true)+dv.getUint16(lo+28,true),raw=u8.subarray(st,st+csz);let data=raw;
-  if(meth===8)data=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());else if(meth!==0)continue;
-  out.set(m[1].toLowerCase(),data)}
- return out}
+// Read central-directory entries without decoding image payloads.
+function scanZipBlockEntries(buf){
+ const dv=new DataView(buf),u8=new Uint8Array(buf);
+ let e=u8.length-22;
+ while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
+ if(e<0)throw new Error('zip');
+ const n=dv.getUint16(e+10,true);
+ let p=dv.getUint32(e+16,true);
+ const entries=[];
+ for(let i=0;i<n;i++){
+  if(dv.getUint32(p,true)!==0x02014b50)break;
+  const meth=dv.getUint16(p+10,true),csz=dv.getUint32(p+20,true);
+  const nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true);
+  const lo=dv.getUint32(p+42,true),name=new TextDecoder().decode(u8.subarray(p+46,p+46+nl));
+  p+=46+nl+xl+cl;
+  const match=name.match(/textures\/block\/([^\/]+)\.png$/i);
+  if(!match)continue;
+  const st=lo+30+dv.getUint16(lo+26,true)+dv.getUint16(lo+28,true);
+  entries.push({name:match[1].toLowerCase(),method:meth,raw:u8.subarray(st,st+csz)});
+ }
+ return entries;
+}
+async function readZip(buf){
+ const out=new Map();
+ for(const {name,method,raw} of scanZipBlockEntries(buf)){
+  let data=raw;
+  if(method===8)data=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  else if(method!==0)continue;
+  out.set(name,data);
+ }
+ return out;
+}
 function tintCanvas(cv,t){const c=cv.getContext('2d'),d=c.getImageData(0,0,cv.width,cv.height),a=d.data;for(let i=0;i<a.length;i+=4){a[i]=a[i]*t[0]/255;a[i+1]=a[i+1]*t[1]/255;a[i+2]=a[i+2]*t[2]/255}c.putImageData(d,0,0)}
 function refreshAtlas(){tex.dispose();tex.needsUpdate=true;atlasStyle.textContent=`.ic{background-image:url(${ac.toDataURL()});image-rendering:pixelated}`}
 function collectPackHits(bm){const hits=[];for(let t=0;t<N;t++){const sp=FM[t];if(!sp)continue;for(const nm of sp.split('|')){const[f,fl]=nm.split('#');if(bm[f]){hits.push([t,bm[f],fl||'',f]);break}}}return hits}
