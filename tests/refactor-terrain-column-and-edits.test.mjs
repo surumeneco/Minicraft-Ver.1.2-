@@ -63,11 +63,11 @@ test('caves are evaluated before bedrock floor substitutions',()=>{
 });
 
 test('tree decoration is added after terrain and does not overwrite an existing trunk with soft leaves',()=>{
- const a=make({tree:['oak',4,5]}),c=a.chunk();
- assert.equal(c.d[a.idx(0,9,0)],4);
- assert.equal(c.d[a.idx(1,9,0)],5);
- assert.equal(c.d[a.idx(0,12,0)],5);
- assert.equal(c.top,13);
+ const a=make({height:8,tree:['oak',4,5]}),c=a.chunk();
+ assert.equal(c.d[a.idx(0,10,0)],4);
+ assert.equal(c.d[a.idx(1,10,0)],5);
+ assert.equal(c.d[a.idx(0,13,0)],5);
+ assert.equal(c.top,14);
 });
 
 test('saved block edits overwrite generated terrain and raise top only when needed',()=>{
