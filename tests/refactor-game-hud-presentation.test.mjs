@@ -12,7 +12,7 @@ const legacyExpression=original>=0?
  source.slice(original+'if(++fr%15==0)hud.textContent='.length,suffix):'';
 
 function display({flying=false,swimDash=false,crouching=false,shieldUp=false,dashing=false,hunger=10,keys={},x=-3,z=6}={}){
- const ctx={flying,shieldUp,hunger,keys, P:{y:17.6},fps:59.9,
+ const ctx={flying,swimDash,crouching,shieldUp,dashing,hunger,keys,ix:x,iz:z,P:{y:17.6},fps:59.9,
   C:new Map([[1,1],[2,2]]),equipped:{weapon:9},ITEMS:{9:{name:'弓'}},
   circuitOn:true,Math};
  vm.createContext(ctx);
