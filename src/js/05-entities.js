@@ -99,8 +99,8 @@ function chooseMobSpeed(m,dt,dx,dz,dist){const T=m.T;let mv=0;m.t+=dt;
   mv=m.fleeT>0?T.sp*2:m.go?T.sp*.6:0;m.fleeT-=dt}
  return mv;
 }
-function stepMob(m,dt){const T=m.T,dx=P.x-m.x,dz=P.z-m.z,dist=Math.hypot(dx,dz);const mv=chooseMobSpeed(m,dt,dx,dz,dist);
- if(m.fuse>0){m.fuse-=dt;m.g.scale.setScalar(1+Math.sin(m.fuse*30)*.08);if(m.fuse<=0){explode(m);return}}
+// Preserve gravity, flow, horizontal collision, autojump and ground response order.
+function advanceMobPhysics(m,dt,mv){const T=m.T;
  const r=T.w/2,h=T.h,iw=isW(getB(Math.floor(m.x),Math.floor(m.y+.3),Math.floor(m.z)));
  if(iw)m.vy=Math.min(m.vy+30*dt,2.5);else m.vy-=26*dt;if(m.vy<-30)m.vy=-30;
  updFlow(m,Math.floor(m.x),[m.y+.3,m.y+.9],Math.floor(m.z),dt);const vx=Math.sin(m.yaw)*mv+m.kx+m.fx,vz=Math.cos(m.yaw)*mv+m.kz+m.fz;m.kx*=Math.max(0,1-5*dt);m.kz*=Math.max(0,1-5*dt);
@@ -108,6 +108,10 @@ function stepMob(m,dt){const T=m.T,dx=P.x-m.x,dz=P.z-m.z,dist=Math.hypot(dx,dz);
  const nz=m.z+vz*dt;if(!hit(m.x,m.y,nz,r,h))m.z=nz;else bl=true;
  if(bl&&m.ground&&mv>0)m.vy=8.5;
  m.ground=false;const ny=m.y+m.vy*dt;if(!hit(m.x,ny,m.z,r,h))m.y=ny;else{if(m.vy<0){const impact=-m.vy;m.ground=true;if(slimeUnder(m.x,m.y,m.z,r))m.vy=impact*Math.SQRT1_2;else m.vy=0}else m.vy=0}
+}
+function stepMob(m,dt){const T=m.T,dx=P.x-m.x,dz=P.z-m.z,dist=Math.hypot(dx,dz);const mv=chooseMobSpeed(m,dt,dx,dz,dist);
+ if(m.fuse>0){m.fuse-=dt;m.g.scale.setScalar(1+Math.sin(m.fuse*30)*.08);if(m.fuse<=0){explode(m);return}}
+ advanceMobPhysics(m,dt,mv);
  if(m.y<1){rmMob(m);return}
  m.wp+=mv*dt*5;m.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(m.wp)*.8*((i==0||i==3)?1:-1):0);
  m.g.position.set(m.x,m.y,m.z);m.g.rotation.y=m.yaw}
