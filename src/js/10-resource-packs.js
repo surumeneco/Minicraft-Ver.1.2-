@@ -146,9 +146,10 @@ async function readZip(buf){const dv=new DataView(buf),u8=new Uint8Array(buf);le
  return out}
 function tintCanvas(cv,t){const c=cv.getContext('2d'),d=c.getImageData(0,0,cv.width,cv.height),a=d.data;for(let i=0;i<a.length;i+=4){a[i]=a[i]*t[0]/255;a[i+1]=a[i+1]*t[1]/255;a[i+2]=a[i+2]*t[2]/255}c.putImageData(d,0,0)}
 function refreshAtlas(){tex.dispose();tex.needsUpdate=true;atlasStyle.textContent=`.ic{background-image:url(${ac.toDataURL()});image-rendering:pixelated}`}
+function collectPackHits(bm){const hits=[];for(let t=0;t<N;t++){const sp=FM[t];if(!sp)continue;for(const nm of sp.split('|')){const[f,fl]=nm.split('#');if(bm[f]){hits.push([t,bm[f],fl||'',f]);break}}}return hits}
 async function applyPack(map){
  const bm={};for(const[k,v]of map){if(!FILES.has(k))continue;try{bm[k]=await createImageBitmap(new Blob([v],{type:'image/png'}))}catch(e){}}
- const hits=[];for(let t=0;t<N;t++){const sp=FM[t];if(!sp)continue;for(const nm of sp.split('|')){const[f,fl]=nm.split('#');if(bm[f]){hits.push([t,bm[f],fl||'',f]);break}}}
+ const hits=collectPackHits(bm);
  if(!hits.length)return 0;
  let T=16;hits.forEach(h=>T=Math.max(T,Math.min(128,Math.min(h[1].width,h[1].height))));
  const base=document.createElement('canvas');base.width=16*CO;base.height=16*RW;base.getContext('2d').putImageData(im,0,0);
