@@ -42,12 +42,23 @@ function fireCont(c){const arr=contAt(c.x,c.y,c.z);if(!arr)return;const f=c.s&3,
  if(c.bs===DROPPER){const tg=contAt(c.x+dr[0],c.y,c.z+dr[2]);if(tg){if(!contInsert(tg,id,1))return}else spawnDrop(id,1,fx,fy,fz,dr[0]*1.5,dr[2]*1.5,1.2)}
  else{if(id===I.arrow)shootArrow(fx,fy,fz,dr[0]*22,2,dr[2]*22);else spawnDrop(id,1,fx,fy,fz,dr[0]*7,dr[2]*7,2.5)}
  sl[1]--;if(sl[1]<=0)arr[i]=null}
-function hopperStep(c){const arr=contAt(c.x,c.y,c.z),f=c.s===0?5:c.s-1,dr=f===5?D6[5]:D4[f];if(!arr)return;
+// Output happens before intake, including when output has no capacity.
+function hopperDirection(c){const f=c.s===0?5:c.s-1;return f===5?D6[5]:D4[f]}
+function hopperPushOutput(c,arr,dr){
  const tg=contAt(c.x+dr[0],c.y+dr[1],c.z+dr[2]);
  for(let i=0;i<arr.length;i++){const sl=arr[i];if(sl&&tg&&contInsert(tg,sl[0],1)){sl[1]--;if(sl[1]<=0)arr[i]=null;break}}
+}
+function hopperPullInput(c,arr){
  const up=contAt(c.x,c.y+1,c.z);
  if(up){for(let i=0;i<up.length;i++){const sl=up[i];if(sl&&contInsert(arr,sl[0],1)){sl[1]--;if(sl[1]<=0)up[i]=null;return}}}
- else for(let i=droppedItems.length-1;i>=0;i--){const d=droppedItems[i];if(Math.abs(d.x-c.x-.5)<.6&&Math.abs(d.z-c.z-.5)<.6&&d.y>c.y+.5&&d.y<c.y+3.2&&contInsert(arr,d.id,1)){d.n--;if(d.n<=0){scene.remove(d.g);droppedItems.splice(i,1)}return}}}
+ else for(let i=droppedItems.length-1;i>=0;i--){const d=droppedItems[i];if(Math.abs(d.x-c.x-.5)<.6&&Math.abs(d.z-c.z-.5)<.6&&d.y>c.y+.5&&d.y<c.y+3.2&&contInsert(arr,d.id,1)){d.n--;if(d.n<=0){scene.remove(d.g);droppedItems.splice(i,1)}return}}
+}
+function hopperStep(c){
+ const arr=contAt(c.x,c.y,c.z),dr=hopperDirection(c);
+ if(!arr)return;
+ hopperPushOutput(c,arr,dr);
+ hopperPullInput(c,arr);
+}
 // ---- ピストン ----
 const IMM=v=>{const bs=v&255;return bs===10||bs===18||bs===PHEAD||CONTB.has(bs)||((bs===PISTON||bs===STICKY_PISTON)&&((v>>8)&8))};
 const PLG=new THREE.BoxGeometry(1,1,.25),SHG=new THREE.BoxGeometry(.25,.25,1),mOch=new THREE.MeshLambertMaterial({color:0xb8924a}),mGrn=new THREE.MeshLambertMaterial({color:0x7cc46a}),mWd=new THREE.MeshLambertMaterial({color:0x9c7a45});
