@@ -91,6 +91,10 @@ function primedTick(dt){for(let i=primed.length-1;i>=0;i--){const p=primed[i];p.
   p.g.position.set(p.x,p.y,p.z);if(p.t<=0){scene.remove(p.g);primed.splice(i,1);blast(p.x,p.y+.5,p.z)}}
  for(let i=fxs.length-1;i>=0;i--){const f=fxs[i];f.t+=dt;f.g.scale.setScalar(.5+f.t*12);f.g.material.opacity=Math.max(0,.8-f.t*2.4);if(f.t>.35){scene.remove(f.g);fxs.splice(i,1)}}}
 // ---- メインtick ----
+// Retain the original sixteen ordered relaxation passes for dust power.
+function spreadDustLevels(dust,nd){
+ for(let it=0;it<16;it++){let chg=false;for(const c of dust){const l=nd.get(rk(c.x,c.y,c.z));if(l<=1)continue;for(const[dx,,dz]of D4){const kk=rk(c.x+dx,c.y,c.z+dz);if(nd.has(kk)&&nd.get(kk)<l-1){nd.set(kk,l-1);chg=true}}}if(!chg)break}
+}
 function rsTick(){const list=[];
  RS.forEach((c,k)=>{if(Math.abs(c.x-P.x)>56||Math.abs(c.z-P.z)>56)return;const v=getB(c.x,c.y,c.z);if(!RSB.has(v&255)){RS.delete(k);return}c.v=v;c.bs=v&255;c.s=v>>8;list.push(c)});
  EM=new Map();const E=(x,y,z,l)=>{const k=rk(x,y,z);if((EM.get(k)||0)<l)EM.set(k,l)},adj=(c,l)=>{for(const[dx,dy,dz]of D6)E(c.x+dx,c.y+dy,c.z+dz,l)};
@@ -101,7 +105,7 @@ function rsTick(){const list=[];
    case REPEATER:if(s&16){const f=s&3;E(c.x+D4[f][0],c.y,c.z+D4[f][2],15)}break;
    case COMPARATOR:if(c.out>0){const f=s&3;E(c.x+D4[f][0],c.y,c.z+D4[f][2],c.out)}break}}
  const dust=list.filter(c=>c.bs===RED_DUST),nd=new Map();for(const c of dust)nd.set(rk(c.x,c.y,c.z),EM.get(rk(c.x,c.y,c.z))||0);
- for(let it=0;it<16;it++){let chg=false;for(const c of dust){const l=nd.get(rk(c.x,c.y,c.z));if(l<=1)continue;for(const[dx,,dz]of D4){const kk=rk(c.x+dx,c.y,c.z+dz);if(nd.has(kk)&&nd.get(kk)<l-1){nd.set(kk,l-1);chg=true}}}if(!chg)break}
+ spreadDustLevels(dust,nd);
  DL=nd;const ch=[];
  for(const c of dust){const l=nd.get(rk(c.x,c.y,c.z));if(l!==c.s)ch.push([c.x,c.y,c.z,RED_DUST|(l<<8)])}
  for(const c of list){const x=c.x,y=c.y,z=c.z,s=c.s;
