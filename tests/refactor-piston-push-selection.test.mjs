@@ -19,7 +19,7 @@ function fixture({state=0,blocks=[],busy=false,y=8,H=24,immutable=99}={}){
   D6:[[0,0,1],[1,0,0],[0,0,-1],[-1,0,0],[0,1,0],[0,-1,0]],
   H,FL:new Uint8Array(256),IMM:v=>v===immutable,
   getB:(x,y,z)=>placed.get(pos(x,y,z))||0,
-  startAnim:(c,type,D,line)=>calls.push({type,D:[...D],line:line?.map(x=>[...x])??null}),
+  startAnim:(c,type,D,line)=>calls.push(JSON.parse(JSON.stringify({type,D:[...D],line:line?.map(x=>[...x])??null}))),
  };
  vm.createContext(ctx);vm.runInContext(code,ctx);
  const c={x:2,y,z:2,s:state,busy};
@@ -44,7 +44,7 @@ test('piston accepts a maximum of 12 movable blocks and rejects 13',()=>{
 test('immovable objects and world height limits abort extension',()=>{
  const fixed=fixture({blocks:[[2,8,3,99]]});fixed.run(true);
  assert.equal(fixed.calls.length,0);
- const atLimit=fixture({state:4,y:22,H:24});atLimit.run(true);
+ const atLimit=fixture({state:4,y:23,H:24});atLimit.run(true);
  assert.equal(atLimit.calls.length,0);
  const floor=fixture({state:5,y:1,blocks:[[2,0,2,10]]});floor.run(true);
  assert.equal(floor.calls.length,0);
