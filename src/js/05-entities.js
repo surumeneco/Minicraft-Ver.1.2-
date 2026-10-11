@@ -138,11 +138,41 @@ updateHp();
 const arrows=[],AG=new THREE.BoxGeometry(.05,.05,.7),AM=new THREE.MeshLambertMaterial({color:0x8a6a3a});
 function shoot(m){const x=m.x,y=m.y+1.5,z=m.z,dx=P.x-x,dy=P.y+1.2-y,dz=P.z-z,d=Math.hypot(dx,dy,dz),t=d/18,r=()=>(Math.random()-.5)*1.2;
  const g=new THREE.Mesh(AG,AM);scene.add(g);arrows.push({g,x,y,z,vx:dx/t+r(),vy:dy/t+5*t+r(),vz:dz/t+r(),life:6})}
-function arrowTick(dt){for(let i=arrows.length-1;i>=0;i--){const a=arrows[i];a.life-=dt;a.vy-=10*dt;a.x+=a.vx*dt;a.y+=a.vy*dt;a.z+=a.vz*dt;
- const bx0=Math.floor(a.x),by0=Math.floor(a.y),bz0=Math.floor(a.z),bv0=getB(bx0,by0,bz0);let dead=a.life<=0||solid(bv0);if(dead&&(bv0&255)===TARGET)targetHit(bx0,by0,bz0,a);if(!dead&&a.own)for(const m of mobs)if(Math.abs(m.x-a.x)<m.T.w/2+.25&&Math.abs(m.z-a.z)<m.T.w/2+.25&&a.y>m.y&&a.y<m.y+m.T.h){m.hp-=5;if(m.hp<=0)rmMob(m);dead=true;break}
- if(!dead&&!a.own&&Math.abs(a.x-P.x)<.45&&Math.abs(a.z-P.z)<.45&&a.y>P.y&&a.y<P.y+1.9){if(shieldUp&&shieldBlocks(a))shieldFlash=.15;else hurt(2+Math.round(Math.random()*2));dead=true}
- if(dead){scene.remove(a.g);arrows.splice(i,1);continue}
- a.g.position.set(a.x,a.y,a.z);a.g.lookAt(a.x+a.vx,a.y+a.vy,a.z+a.vz)}}
+// Integrate projectile position before evaluating collisions.
+function advanceArrowMotion(a,dt){
+ a.life-=dt;
+ a.vy-=10*dt;
+ a.x+=a.vx*dt;
+ a.y+=a.vy*dt;
+ a.z+=a.vz*dt;
+}
+function resolveArrowCollision(a){
+ const bx0=Math.floor(a.x),by0=Math.floor(a.y),bz0=Math.floor(a.z),bv0=getB(bx0,by0,bz0);
+ let dead=a.life<=0||solid(bv0);
+ if(dead&&(bv0&255)===TARGET)targetHit(bx0,by0,bz0,a);
+ if(!dead&&a.own)for(const m of mobs)if(Math.abs(m.x-a.x)<m.T.w/2+.25&&Math.abs(m.z-a.z)<m.T.w/2+.25&&a.y>m.y&&a.y<m.y+m.T.h){
+  m.hp-=5;if(m.hp<=0)rmMob(m);dead=true;break;
+ }
+ if(!dead&&!a.own&&Math.abs(a.x-P.x)<.45&&Math.abs(a.z-P.z)<.45&&a.y>P.y&&a.y<P.y+1.9){
+  if(shieldUp&&shieldBlocks(a))shieldFlash=.15;
+  else hurt(2+Math.round(Math.random()*2));
+  dead=true;
+ }
+ return dead;
+}
+function arrowTick(dt){
+ for(let i=arrows.length-1;i>=0;i--){
+  const a=arrows[i];
+  advanceArrowMotion(a,dt);
+  if(resolveArrowCollision(a)){
+   scene.remove(a.g);
+   arrows.splice(i,1);
+   continue;
+  }
+  a.g.position.set(a.x,a.y,a.z);
+  a.g.lookAt(a.x+a.vx,a.y+a.vy,a.z+a.vz);
+ }
+}
 // ---- 雲（高度 y=100〜104・ゆっくり流れる） ----
 const CLD={cs:12,y:100,h:4,R:22,ci:1e9,cj:1e9,m:null,off:0},cloudMat=new THREE.MeshBasicMaterial({color:0xffffff,vertexColors:true,transparent:true,opacity:.9,fog:false,depthWrite:false});
 const cloudAt=(i,j)=>vn(i/3.5+21.7,j/3.5+9.3)>.54||hs(i*.7,j*1.3)>.985;
