@@ -56,10 +56,29 @@ function fluidCell(k,x,y,z,ch){
   const d=fdesired(k,x,y,z);
   if(d>0)ch.push([x,y,z,FLW(k)|(d<<8)]);
  }}
-function fluidTick(dt){for(let k=0;k<2;k++){FAC[k]+=dt;if(FAC[k]<FIV[k])continue;FAC[k]=FAC[k]>FIV[k]*2?0:FAC[k]-FIV[k];
-  const cells=[...FQ[k].values()];FQ[k].clear();if(!cells.length)continue;
-  const run=cells.slice(0,1800);for(const p of cells.slice(1800))FQ[k].set(rk(p[0],p[1],p[2]),p);
-  const ch=[];for(const[x,y,z]of run)fluidCell(k,x,y,z,ch);if(ch.length)applyChanges(ch)}}
+function fluidStepDue(k,dt){
+ FAC[k]+=dt;
+ if(FAC[k]<FIV[k])return false;
+ FAC[k]=FAC[k]>FIV[k]*2?0:FAC[k]-FIV[k];
+ return true;
+}
+function takeFluidWork(k){
+ const cells=[...FQ[k].values()];
+ FQ[k].clear();
+ const work=cells.slice(0,1800);
+ for(const p of cells.slice(1800))FQ[k].set(rk(p[0],p[1],p[2]),p);
+ return work;
+}
+function fluidTick(dt){
+ for(let k=0;k<2;k++){
+  if(!fluidStepDue(k,dt))continue;
+  const work=takeFluidWork(k);
+  if(!work.length)continue;
+  const changes=[];
+  for(const [x,y,z] of work)fluidCell(k,x,y,z,changes);
+  if(changes.length)applyChanges(changes);
+ }
+}
 // ---- バケツ ----
 function rayFluid(){const dir=rdir.set(0,0,-1).applyEuler(cam.rotation),o=cam.position;let prev=null;
  for(let t=0;t<5;t+=.04){const x=Math.floor(o.x+dir.x*t),y=Math.floor(o.y+dir.y*t),z=Math.floor(o.z+dir.z*t),v=getB(x,y,z);
