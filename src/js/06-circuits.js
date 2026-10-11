@@ -118,6 +118,14 @@ function primedTick(dt){for(let i=primed.length-1;i>=0;i--){const p=primed[i];p.
 function spreadDustLevels(dust,nd){
  for(let it=0;it<16;it++){let chg=false;for(const c of dust){const l=nd.get(rk(c.x,c.y,c.z));if(l<=1)continue;for(const[dx,,dz]of D4){const kk=rk(c.x+dx,c.y,c.z+dz);if(nd.has(kk)&&nd.get(kk)<l-1){nd.set(kk,l-1);chg=true}}}if(!chg)break}
 }
+// Keep rear-container precedence and evaluate both side inputs in original order.
+function calculateComparatorOutput(c,x,y,z,s){
+ const f=s&3,bx=x-D4[f][0],bz=z-D4[f][2];
+ let B=contLevel(bx,y,bz);
+ if(B<0)B=outAt(bx,y,bz,x,z);
+ const A=Math.max(sideLvl(x+D4[(f+1)&3][0],y,z+D4[(f+1)&3][2],x,z),sideLvl(x+D4[(f+3)&3][0],y,z+D4[(f+3)&3][2],x,z));
+ return(s&4)?Math.max(B-A,0):(A>B?0:B);
+}
 function rsTick(){const list=[];
  RS.forEach((c,k)=>{if(Math.abs(c.x-P.x)>56||Math.abs(c.z-P.z)>56)return;const v=getB(c.x,c.y,c.z);if(!RSB.has(v&255)){RS.delete(k);return}c.v=v;c.bs=v&255;c.s=v>>8;list.push(c)});
  EM=new Map();const E=(x,y,z,l)=>{const k=rk(x,y,z);if((EM.get(k)||0)<l)EM.set(k,l)},adj=(c,l)=>{for(const[dx,dy,dz]of D6)E(c.x+dx,c.y+dy,c.z+dz,l)};
@@ -137,9 +145,7 @@ function rsTick(){const list=[];
    case TNTB:if(cpow(x,y,z)>0)ignite(x,y,z,4);break;
    case REPEATER:{const f=s&3,d=((s>>2)&3)+1,want=outAt(x-D4[f][0],y,z-D4[f][2],x,z)>0;if(c.on===undefined)c.on=!!(s&16);
     if(want!==c.on){if(c.pv===want){if(--c.tm<=0){c.on=want;c.pv=undefined;ch.push([x,y,z,REPEATER|(((s&~16)|(want?16:0))<<8)])}}else{c.pv=want;c.tm=d}}else c.pv=undefined;break}
-   case COMPARATOR:{const f=s&3,bx=x-D4[f][0],bz=z-D4[f][2];let B=contLevel(bx,y,bz);if(B<0)B=outAt(bx,y,bz,x,z);
-    const A=Math.max(sideLvl(x+D4[(f+1)&3][0],y,z+D4[(f+1)&3][2],x,z),sideLvl(x+D4[(f+3)&3][0],y,z+D4[(f+3)&3][2],x,z));
-    c.out=(s&4)?Math.max(B-A,0):(A>B?0:B);break}
+   case COMPARATOR:c.out=calculateComparatorOutput(c,x,y,z,s);break;
    case OBSERVER:{const f=s&3,cur=getB(x+D4[f][0],y,z+D4[f][2]);if(c.last===undefined)c.last=cur;else if(cur!==c.last){c.last=cur;c.pulse=2}break}
    case PISTON:case STICKY_PISTON:pistonTick(c,cpow(x,y,z)>0);break;
    case DISPENSER:case DROPPER:{const p=cpow(x,y,z)>0;if(p&&!c.pw)fireCont(c);c.pw=p;break}
