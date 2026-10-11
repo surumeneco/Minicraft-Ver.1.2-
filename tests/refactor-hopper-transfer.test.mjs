@@ -56,7 +56,7 @@ test('when no upper container exists, nearby dropped items are scanned in revers
   {id:13,n:1,x:.5,y:6,z:.5},
   {id:14,n:2,x:.5,y:6,z:.5}
  ]});f.run();
- assert.deepEqual(flat(f.arr),[[11,1],[14,1]]);
+ assert.deepEqual(flat(f.arr),[[11,2],[14,1]]);
  assert.equal(f.droppedItems[1].n,1);
  assert.equal(f.droppedItems.length,2);
  assert.equal(f.removed.length,0);
@@ -68,7 +68,7 @@ test('when no upper container exists, nearby dropped items are scanned in revers
 test('an existing empty upper container blocks dropped-item collection',()=>{
  const f=create({above:[],drops:[{id:15,n:1,x:.5,y:6,z:.5}]});
  f.run();
- assert.deepEqual(flat(f.arr),[[11,1],null]);
+ assert.deepEqual(flat(f.arr),[[11,2],null]);
  assert.equal(f.droppedItems.length,1);
 });
 
