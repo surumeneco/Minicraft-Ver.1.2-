@@ -124,13 +124,13 @@ for(let i=1;i<256;i++)if(AXB[i])FULLO.add(i);
 const di=d=>d[2]<0?0:d[0]>0?1:d[2]>0?2:d[0]<0?3:d[1]>0?4:5;
 function occl(nb){
  if(!nb)return nb;
- const id=nb&255;
+ const id=blockBaseId(nb);
  if(FL[id]||TR.has(nb)||THIN[id])return false;
  if(nb<256)return !RSF[nb]||FULLO.has(nb);
  return FULLO.has(id);
 }
 function pickTile(v,d,bt,alt){
- const bs=v&255,s=v>>8,k=di(d);
+ const bs=blockBaseId(v),s=blockState(v),k=di(d);
  if(alt)return bt[3];
  if(AXB[bs]&&s>0&&s<3)return d[s===1?0:2]!==0?bt[0]:bt[1];
  switch(bs){

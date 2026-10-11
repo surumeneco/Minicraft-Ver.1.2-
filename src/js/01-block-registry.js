@@ -3,6 +3,8 @@ if(typeof THREE==='undefined'){document.getElementById('msg').innerHTML='<h1>ミ
 let brightMul=1,sprintAmt=0;
 const H=80,SL=30,LIM=500,RD_BASE=innerWidth<820?3:3;let RD=RD_BASE;const WA=24,LA=25;
 const idx=(x,y,z)=>x+16*(z+16*y);
+// Encoded world blocks reserve the low 8 bits for the block ID.
+const blockBaseId=value=>value&255, blockState=value=>value>>8;
 function hs(x,z){let n=Math.sin(x*127.1+z*311.7)*43758.5453;return n-Math.floor(n)}
 function vn(x,z){const xi=Math.floor(x),zi=Math.floor(z),fx=x-xi,fz=z-zi,u=fx*fx*(3-2*fx),v=fz*fz*(3-2*fz);
 return (hs(xi,zi)*(1-u)+hs(xi+1,zi)*u)*(1-v)+(hs(xi,zi+1)*(1-u)+hs(xi+1,zi+1)*u)*v}
@@ -82,7 +84,7 @@ ALT(RED_LAMP,S('lampOn'));ALT(REPEATER,S('rrepOn'));ALT(COMPARATOR,S('rcmp2'));A
 const PHEAD=B('ピストンヘッド',S('pistT',[165,138,80]),S('pk',[165,138,80]),S('pk',[130,105,60]));PL.pop();ALT(PHEAD,S('pistT',[124,196,106]));
 const WF=BT.length;BT.push([25,25,25]);NMS[WF]='流れる水';const LF=BT.length;BT.push([26,26,26]);NMS[LF]='流れる溶岩';
 const WSPG=B('湿ったスポンジ',S('spgW',[150,150,62]));PL.pop();
-const FL=new Uint8Array(256);FL[WA]=FL[WF]=1;FL[LA]=FL[LF]=2;const isW=v=>FL[v&255]===1,isL=v=>FL[v&255]===2;
+const FL=new Uint8Array(256);FL[WA]=FL[WF]=1;FL[LA]=FL[LF]=2;const isW=v=>FL[blockBaseId(v)]===1,isL=v=>FL[blockBaseId(v)]===2;
 // 薄い/小さいブロック（THIN）。NC=当たり判定なし（歩いて通れる）
 const THIN=new Uint8Array(256),NC=new Uint8Array(256);
 [[RED_DUST,1],[RED_TORCH,2],[REPEATER,3],[COMPARATOR,3],[LEVER,4],[STONE_BUTTON,5],[PRESSURE,6],[RAIL,7],[POWERED_RAIL,7],[DETECTOR_RAIL,7],[ACTIVATOR_RAIL,7],[HOPPER,8]].forEach(([id,t])=>{THIN[id]=t;if(t!==8)NC[id]=1});

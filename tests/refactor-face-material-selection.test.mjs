@@ -12,6 +12,7 @@ const N=[0,0,-1],E=[1,0,0],S=[0,0,1],W=[-1,0,0],U=[0,1,0],D=[0,-1,0],BT=[100,101
 
 function setup(){
  const ctx={
+  blockBaseId:value=>value&255,blockState:value=>value>>8,
   FL:new Uint8Array(256),TR:new Set(),THIN:new Uint8Array(256),RSF:new Uint8Array(256),FULLO:new Set(),AXB:new Uint8Array(256),
   CHEST:10,OBSERVER:11,DISPENSER:12,DROPPER:13,PISTON:14,STICKY_PISTON:15,
   PHEAD:16,RED_LAMP:17,REPEATER:18,COMPARATOR:19

@@ -24,6 +24,8 @@ test('block state encoding retains 8-bit ID and high-byte state contract',()=>{
   assert.equal(encoded&255,id);
   assert.equal(encoded>>8,state);
  }
+ assert.equal(evaluate(ctx,'blockBaseId(255|(13<<8))'),255);
+ assert.equal(evaluate(ctx,'blockState(255|(13<<8))'),13);
  assert.equal(evaluate(ctx,'BT.length-1'),255);
  assert.equal(evaluate(ctx,'PL.every(v=>BT[v&255]!=null)'),true);
  assert.equal(evaluate(ctx,'PL.some(v=>(v&255)===255&&(v>>8)===13)'),true);
