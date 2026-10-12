@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `481afd9170e254817af03b388bed4eb5a374f687`（2026-10-12）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `34596b83919a6a29e31db51a9cb955a863dd852c`（2026-10-12）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -14,10 +14,10 @@
 | 2 | メッシュの頂点色・照明・AO（03, 05） | 頂点色の角AO・ブロック光、光源探索・減衰伝播を分離済。atlas UV更新などは残存 | 一部完了（meshVertexColor/collectBlockLightSources/propagateBlockLight） |
 | 3 | 地形生成・装飾（03） | 地形列・樹木装飾・保存済み編集の適用を独立化。鉱石・洞窟、草花の細分化は残存 | 一部完了（fillTerrainColumn/decorateChunkTrees/replayChunkEdits） |
 | 4 | 回路・機構（06） | リピーター遅延、オブザーバー変化検知、ピストンアニメーション完了、TNTブロック走査・ダメージ、回路tick時間制御を分離。信号収集・導火線管理・回路全体の副作用整理は残存 | 一部完了（updateRepeaterState/updateObserverState/finishPistonAnimation/collectBlastBlockChanges/damageBlastEntities/advanceCircuitClock 等） |
-| 5 | Mob・戦闘・投射物（05） | 行動判断・Mob移動物理・矢の移動/命中処理を分離。被ダメージ・スポーン・Mob描画・投射物の生成は残存 | 一部完了（chooseMobSpeed/advanceMobPhysics/advanceArrowMotion/resolveArrowCollision） |
-| 6 | 移動・入力・ゲームループ（04-1, 08） | HUD文字列とプレイヤーの衝突・段差・着地を分離。キー状態・速度計算・カメラ・HUD更新時刻・フレーム更新は残存 | 一部完了（formatHudText/advancePlayerCollision） |
+| 5 | Mob・戦闘・投射物（05） | Mob判断・移動・矢の移動/命中に加え、スポーン候補選定、Mob定期更新、プレイヤー装備軽減を分離。Mob攻撃・Mob描画・投射物生成等は残存 | 一部完了（selectMobSpawn/advanceMobTimers/updateMobPopulation/calculateArmoredDamage 等） |
+| 6 | 移動・入力・ゲームループ（04-1, 08） | HUD、衝突・段差・着地、移動速度の決定、速度ベクトル更新を分離。キー状態・カメラ・時間管理・フレーム更新は残存 | 一部完了（formatHudText/advancePlayerCollision/playerMoveSpeed/advancePlayerVelocity） |
 | 7 | 所持品・クラフト・UI（04-0, 09） | 装備・所持品・ホットバー・2×2クラフトの画面生成を分離。所持品の状態更新・装備操作・クラフト検証と描画の依存整理は残存 | 一部完了（renderInventoryEquipmentPanel/OwnedSlots/Hotbar/Crafting） |
-| 8 | リソースパック（10） | テクスチャ別名の選択とZIP中央ディレクトリの走査を分離。DEFLATE展開・画像適用・atlas更新/復元は残存 | 一部完了（collectPackHits/scanZipBlockEntries） |
+| 8 | リソースパック（10） | ファイル名選択、ZIPエントリ走査、画像のatlasタイル描画を分離。実ブラウザでのPNG/DEFLATE読込・画像デコード・atlasの復元は残存 | 一部完了（collectPackHits/scanZipBlockEntries/paintPackAtlas） |
 | 9 | テクスチャ・設定・起動（01, 02, 11） | 設定の読込・数値範囲/型の正規化を関数に抽出。ノイズ・生成画像・DOM反映・起動順は残存 | 一部完了（hydrateSettings） |
 
 ## 先行成果（本計画以前）
@@ -109,3 +109,21 @@
 **別課題にする挙動候補:** `pushEnt()` はピストン伸長時に複数セルを順に調べるため、移動したエンティティが次のセルにも該当すると連続して複数ブロック分移動する。既存挙動を回帰テストに固定したが、仕様として妥当かは別途判断が必要。リファクタリングの範囲では変更していない。
 
 **検証範囲:** 各featureにおける変更前・変更後のNode.js CIは成功。ブラウザ実機、WebGL視覚的一致、実セーブデータ、CAT-TDD正式ゲートの確認は未実施。
+
+## 追加実施：プレイヤー速度・Mob生成/被ダメージ・画像アトラス・Mob更新（2026-10-12）
+
+- `feature/refactor-player-velocity` → `310880a`: `playerMoveSpeed()` と `advancePlayerVelocity()` を抽出。飛行、ダッシュ、しゃがみ、水流・水中、蜂蜜、ジャンプ、落下速度下限を回帰テストで固定。
+- `feature/refactor-mob-spawn-selection` → `d5218b3`: `selectMobSpawn()` を抽出。候補判定と `addMob()` を分離し、乱数の呼び出し順、昼夜、地面、上限、出現座標を回帰テストで固定。
+- `feature/refactor-player-damage-mitigation` → `ba1604d`: `calculateArmoredDamage()` を抽出。装備4部位、70%軽減上限、最低1ダメージ、HP更新、死亡時処理順を固定。
+- `feature/refactor-resource-pack-atlas-paint` → `f6e231e`: `paintPackAtlas()` を抽出。アトラスのベース画像、タイル順、ガラスの透明化、草の重ね描き・色乗算、保存失敗時の既存通知を模擬Canvasテストで固定。**実ブラウザや実PNGでの視覚確認は未実施。**
+- `feature/refactor-mob-tick-scheduling` → `34596b8`: `advanceMobTimers()` と `updateMobPopulation()` を抽出。スポーン時刻、満HP時の回復タイマー維持、遠距離Mob削除と更新順序を固定。
+
+### 続行対象（この節を最新とする）
+
+1. プレイヤーゲームループ：入力・視点/カメラ・フレーム時刻・空腹度の更新の分離とDOM統合テスト。
+2. Mob戦闘：スポーン・移動以外の攻撃、死亡ドロップ、投射物生成・Mob描画の副作用を分離。
+3. インベントリ/クラフト：状態変更、装備操作、所持数とUI同期の検証を強化。
+4. リソースパック：実ZIPのDEFLATE展開、PNGデコード、ブラウザでのアトラス適用/復元を検証。
+5. レッドストーン/地形/描画：信号収集・爆発の時刻管理、鉱石/洞窟、テクスチャ更新、ブロックIDアクセサ使用範囲の整理。
+
+各実装ブランチで変更前・変更後のCI成功を確認。新しい統合developの最終CI結果は別途確認すること。ブラウザ実機・実セーブの動作検証、CAT-TDD正式ゲートは未実施。
