@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `34596b83919a6a29e31db51a9cb955a863dd852c`（2026-10-12）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `1661fd0d693dea546f2b1a9d8124c5bdeece5ca7`（2026-10-12）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -14,10 +14,10 @@
 | 2 | メッシュの頂点色・照明・AO（03, 05） | 頂点色の角AO・ブロック光、光源探索・減衰伝播を分離済。atlas UV更新などは残存 | 一部完了（meshVertexColor/collectBlockLightSources/propagateBlockLight） |
 | 3 | 地形生成・装飾（03） | 地形列・樹木装飾・保存済み編集の適用を独立化。鉱石・洞窟、草花の細分化は残存 | 一部完了（fillTerrainColumn/decorateChunkTrees/replayChunkEdits） |
 | 4 | 回路・機構（06） | リピーター遅延、オブザーバー変化検知、ピストンアニメーション完了、TNTブロック走査・ダメージ、回路tick時間制御を分離。信号収集・導火線管理・回路全体の副作用整理は残存 | 一部完了（updateRepeaterState/updateObserverState/finishPistonAnimation/collectBlastBlockChanges/damageBlastEntities/advanceCircuitClock 等） |
-| 5 | Mob・戦闘・投射物（05） | Mob判断・移動・矢の移動/命中に加え、スポーン候補選定、Mob定期更新、プレイヤー装備軽減を分離。Mob攻撃・Mob描画・投射物生成等は残存 | 一部完了（selectMobSpawn/advanceMobTimers/updateMobPopulation/calculateArmoredDamage 等） |
-| 6 | 移動・入力・ゲームループ（04-1, 08） | HUD、衝突・段差・着地、移動速度の決定、速度ベクトル更新を分離。キー状態・カメラ・時間管理・フレーム更新は残存 | 一部完了（formatHudText/advancePlayerCollision/playerMoveSpeed/advancePlayerVelocity） |
+| 5 | Mob・戦闘・投射物（05） | Mob判断・移動・スポーン・体力処理、近接ヒットと死亡ドロップ、矢の速度生成・移動・命中を分離済。Mob描画・クリーパー爆発・攻撃全般の統合検証は残存 | 一部完了（applyMeleeHit/dropDefeatedMob/calculateArrowVelocity 等） |
+| 6 | 移動・入力・ゲームループ（04-1, 08） | HUD・衝突・移動速度・速度ベクトル・フレーム時刻とFPS・空腹度・カメラ・水中表示を分離済。キー状態、フレーム全体の連携テストは残存 | 一部完了（advanceFrameClock/advanceHungerClock/updatePlayerCamera/updateUnderwaterVisuals 等） |
 | 7 | 所持品・クラフト・UI（04-0, 09） | 装備・所持品・ホットバー・2×2クラフトの画面生成を分離。所持品の状態更新・装備操作・クラフト検証と描画の依存整理は残存 | 一部完了（renderInventoryEquipmentPanel/OwnedSlots/Hotbar/Crafting） |
-| 8 | リソースパック（10） | ファイル名選択、ZIPエントリ走査、画像のatlasタイル描画を分離。実ブラウザでのPNG/DEFLATE読込・画像デコード・atlasの復元は残存 | 一部完了（collectPackHits/scanZipBlockEntries/paintPackAtlas） |
+| 8 | リソースパック（10） | ファイル選択・ZIPエントリ走査・画像デコード呼出し・atlas描画を分離。実PNG/DEFLATE読込、ブラウザでの適用と復元は未検証 | 一部完了（collectPackHits/scanZipBlockEntries/decodePackImages/paintPackAtlas） |
 | 9 | テクスチャ・設定・起動（01, 02, 11） | 設定の読込・数値範囲/型の正規化を関数に抽出。ノイズ・生成画像・DOM反映・起動順は残存 | 一部完了（hydrateSettings） |
 
 ## 先行成果（本計画以前）
@@ -127,3 +127,21 @@
 5. レッドストーン/地形/描画：信号収集・爆発の時刻管理、鉱石/洞窟、テクスチャ更新、ブロックIDアクセサ使用範囲の整理。
 
 各実装ブランチで変更前・変更後のCI成功を確認。新しい統合developの最終CI結果は別途確認すること。ブラウザ実機・実セーブの動作検証、CAT-TDD正式ゲートは未実施。
+
+## 追加実施：ゲームループ時刻・Mob近接戦闘・矢生成・水中表示・PNGデコード（2026-10-12）
+
+- `feature/refactor-frame-clock-hunger` → `f5a0b49`: `advanceFrameClock()`、`advanceHungerClock()` を分離。50ms刻み制限・FPS平滑化、300秒の空腹減少、ポーズとメッセージ時の停止、セーブ順を変更前後のCIで確認。
+- `feature/refactor-mob-melee-loot` → `2d3fd61`: `applyMeleeHit()`、`dropDefeatedMob()` を分離。近接攻撃、耐久度、ノックバック、非敵対Mobの逃走、Mob削除後の独立ドロップ確率判定順を確認。
+- `feature/refactor-arrow-launch-vector` → `ee6ac0f`: `calculateArrowVelocity()` を分離。発射位置、放物線初速、3回の乱数使用、メッシュ生成とシーン追加後に速度乱数を使う順序を確認。
+- `feature/refactor-camera-underwater-view` → `026fb40`: `updatePlayerCamera()`、`updateUnderwaterVisuals()` を分離。位置・視点回転・FOV閾値、霧・背景・雲・オーバーレイの水中遷移をモックテストで固定。
+- `feature/refactor-resource-pack-decode` → `1661fd0`: `decodePackImages()` を分離。対象ファイル選別・逐次処理・不正PNGのスキップ・デコード成功後の順序をモックで固定。**実PNGデコード、壊れた実ZIPの互換性と見た目は未検証。**
+
+### これから優先する未完了の検証・分離
+
+1. `src/js/04-1-input.js` の入力イベントとゲームループ・装備・インベントリ状態の責務整理と、ブラウザE2Eによる操作確認。
+2. インベントリ所持数/クラフト処理の一貫性と、チェスト・保存・装備との状態遷移テスト。
+3. 画像パック実ZIP（deflate-raw）・実PNG・アトラス復元とWebGLの描画互換性テスト。
+4. 残るワールド生成の鉱石/洞窟/植生、回路の信号収集、描画色・Block IDアクセサの段階的整理。
+5. 画面操作・Mob戦闘・セーブ復元・WebGL描画の実機確認とCAT-TDD正式ゲートの検証。
+
+今回の回帰テストはNode.js vm、模擬DOM、模擬デコード・画像レンダラを含む。CI成功はブラウザでの視覚的一致やすべての動作互換性を保証しない。
