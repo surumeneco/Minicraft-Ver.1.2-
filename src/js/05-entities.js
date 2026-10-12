@@ -79,7 +79,12 @@ const MT={
 function addMob(type,x,y,z){const T=MT[type],g=new THREE.Group(),legs=T.b(g);scene.add(g);mobs.push({T,g,legs,x,y,z,vy:0,yaw:Math.random()*6.28,hp:T.hp,t:0,wp:0,turn:0,go:false,kx:0,kz:0,fleeT:0,fuse:0,atk:.5,sh:1.5,ground:false})}
 function rmMob(m){scene.remove(m.g);mobs.splice(mobs.indexOf(m),1)}
 function updateHp(){const e=document.getElementById('hp');if(!e)return;const h=Math.max(0,Math.min(10,Math.ceil(hp/2)));e.innerHTML='<span class="hearts" aria-label="HP">'+Array.from({length:10},(_,i)=>'<span class="'+(i<h?'':'empty')+'">'+(i<h?'♥':'♡')+'</span>').join('')+'</span><span class="meats" aria-label="満腹度">'+Array.from({length:10},(_,i)=>'<span class="'+(i<hunger?'':'empty')+'">🍖</span>').join('')+'</span>'}
-function hurt(d){const ar=[equipped.helmet,equipped.chest,equipped.legs,equipped.boots].filter(Boolean).reduce((a,id)=>a+ITEMS[id].damage,0);d=Math.max(1,Math.round(d*(1-Math.min(.7,ar/40))));hp-=d;if(hp<=0){toast('やられた！ リスポーンします');respawn();for(const m of mobs.slice())if(m.T.host)rmMob(m)}updateHp()}
+// Keep damage reduction independent of HP mutation and death handling.
+function calculateArmoredDamage(d){
+ const ar=[equipped.helmet,equipped.chest,equipped.legs,equipped.boots].filter(Boolean).reduce((a,id)=>a+ITEMS[id].damage,0);
+ return Math.max(1,Math.round(d*(1-Math.min(.7,ar/40))));
+}
+function hurt(d){d=calculateArmoredDamage(d);hp-=d;if(hp<=0){toast('やられた！ リスポーンします');respawn();for(const m of mobs.slice())if(m.T.host)rmMob(m)}updateHp()}
 function explode(m){const cx=Math.floor(m.x),cy=Math.floor(m.y+.5),cz=Math.floor(m.z),ch=[];
  for(let dx=-3;dx<=3;dx++)for(let dy=-3;dy<=3;dy++)for(let dz=-3;dz<=3;dz++){if(dx*dx+dy*dy+dz*dz>10)continue;
   const x=cx+dx,y=cy+dy,z=cz+dz;if(y<1||y>=H)continue;const v=getB(x,y,z);if(!v||v==10||FL[v&255])continue;
