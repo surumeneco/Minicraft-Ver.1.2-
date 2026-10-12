@@ -82,16 +82,20 @@ function pistonTick(c,want){const s=c.s,f=s&7,ext=!!(s&8);if(c.busy)return;const
 function startAnim(c,type,D,line){c.busy=true;const g=new THREE.Group(),pl=new THREE.Mesh(PLG,(c.bs===STICKY_PISTON)?mGrn:mOch),sh=new THREE.Mesh(SHG,mWd);g.add(pl,sh);g.position.set(c.x+.5,c.y+.5,c.z+.5);g.lookAt(new THREE.Vector3(c.x+.5+D[0],c.y+.5+D[1],c.z+.5+D[2]));scene.add(g);anims.push({c,type,D,line,t:0,g,pl,sh})}
 function pushEnt(cells,D){for(const[cx,cy,cz]of cells){const inC=(x,y,z)=>Math.floor(x)===cx&&Math.floor(z)===cz&&y>cy-1&&y<cy+1;
   if(inC(P.x,P.y,P.z)){P.x+=D[0];P.y+=D[1];P.z+=D[2]}for(const m of mobs)if(inC(m.x,m.y,m.z)){m.x+=D[0];m.y+=D[1];m.z+=D[2]}}}
-function animTick(dt){for(let i=anims.length-1;i>=0;i--){const a=anims[i];a.t+=dt;const p=Math.min(1,a.t/.1),q=a.type==='ext'?p:1-p;
-  a.pl.position.z=.375+q;a.sh.position.z=.25+q/2;a.sh.scale.z=Math.max(q,.001);
-  if(a.t<.1)continue;const c=a.c,s=c.s,f=s&7,D=a.D,sticky=c.bs===STICKY_PISTON,fin=new Map(),put=(x,y,z,v)=>fin.set(rk(x,y,z),[x,y,z,v]);
+// Commit piston blocks and entity movement after the animated 0.1-second interval.
+function finishPistonAnimation(a){
+ const c=a.c,s=c.s,f=s&7,D=a.D,sticky=c.bs===STICKY_PISTON,fin=new Map(),put=(x,y,z,v)=>fin.set(rk(x,y,z),[x,y,z,v]);
   const fx=c.x+D[0],fy=c.y+D[1],fz=c.z+D[2];
   if(a.type==='ext'){for(const[x,y,z]of a.line)put(x,y,z,0);for(const[x,y,z,v]of a.line)put(x+D[0],y+D[1],z+D[2],v);
    put(fx,fy,fz,PHEAD|((f|(sticky?8:0))<<8));put(c.x,c.y,c.z,c.bs|((f|8)<<8));
    pushEnt([[fx,fy,fz],...a.line.map(([x,y,z])=>[x+D[0],y+D[1],z+D[2]])],D)}
   else{put(c.x,c.y,c.z,c.bs|((f&7)<<8));put(fx,fy,fz,0);
    if(sticky){const bx=fx+D[0],by=fy+D[1],bz=fz+D[2],v=getB(bx,by,bz);if(v&&!FL[v&255]&&!IMM(v)){put(bx,by,bz,0);put(fx,fy,fz,v)}}}
-  applyChanges([...fin.values()]);c.busy=false;scene.remove(a.g);anims.splice(i,1)}}
+  applyChanges([...fin.values()]);c.busy=false;scene.remove(a.g);
+}
+function animTick(dt){for(let i=anims.length-1;i>=0;i--){const a=anims[i];a.t+=dt;const p=Math.min(1,a.t/.1),q=a.type==='ext'?p:1-p;
+  a.pl.position.z=.375+q;a.sh.position.z=.25+q/2;a.sh.scale.z=Math.max(q,.001);
+  if(a.t<.1)continue;finishPistonAnimation(a);anims.splice(i,1)}}
 // ---- TNT ----
 const TNTG=new THREE.BoxGeometry(1,1,1),TBG=new THREE.BoxGeometry(1.01,.3,1.01),tMatR=new THREE.MeshLambertMaterial({color:0xc83020}),tMatW=new THREE.MeshLambertMaterial({color:0xffffff,emissive:0xffffff}),tMatB=new THREE.MeshLambertMaterial({color:0xe8e8e8});
 function spawnPrimed(x,y,z,fuse){const g=new THREE.Group(),m=new THREE.Mesh(TNTG,tMatR),b=new THREE.Mesh(TBG,tMatB);m.position.y=.5;b.position.y=.5;g.add(m,b);g.position.set(x,y,z);scene.add(g);primed.push({g,m,b,x,y,z,t:fuse,vy:3.5})}
