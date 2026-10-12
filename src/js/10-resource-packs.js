@@ -178,8 +178,13 @@ function paintPackAtlas(g,tc,T,hits,bm){
   draw(b,fl==='s'?'':fl);g.drawImage(tc,cx,cy);
   if(fl==='s'&&bm.grass_block_side_overlay){draw(bm.grass_block_side_overlay,'g');g.drawImage(tc,cx,cy)}}
 }
-async function applyPack(map){
+// Decode supported block textures in source order and skip invalid PNG entries.
+async function decodePackImages(map){
  const bm={};for(const[k,v]of map){if(!FILES.has(k))continue;try{bm[k]=await createImageBitmap(new Blob([v],{type:'image/png'}))}catch(e){}}
+ return bm;
+}
+async function applyPack(map){
+ const bm=await decodePackImages(map);
  const hits=collectPackHits(bm);
  if(!hits.length)return 0;
  let T=16;hits.forEach(h=>T=Math.max(T,Math.min(128,Math.min(h[1].width,h[1].height))));
