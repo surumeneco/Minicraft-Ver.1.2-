@@ -119,7 +119,7 @@ function pickMob(){const o=cam.position;let best=null;
  for(const m of mobs){const vx=m.x-o.x,vy=m.y+m.T.h/2-o.y,vz=m.z-o.z,t=vx*rdir.x+vy*rdir.y+vz*rdir.z;if(t<0||t>4.5)continue;
   const d2=vx*vx+vy*vy+vz*vz-t*t,rr=Math.max(m.T.w,m.T.h*.6)/2+.1;if(d2<rr*rr&&(!best||t<best.t))best={m,t}}return best}
 function attack(m){const wi=equipped.weapon,damage=wi?ITEMS[wi].damage:5;m.hp-=damage;m.kx=-Math.sin(P.yaw)*(wi?9:7);m.kz=-Math.cos(P.yaw)*(wi?9:7);m.vy=5;if(wi&&ITEMS[wi].dur>0)ITEMS[wi].dur--;if(!m.T.host){m.fleeT=3;m.yaw=P.yaw+Math.PI}if(m.hp<=0){const drops=m.T.drops||[];const mx=m.x,my=m.y+0.8,mz=m.z;rmMob(m);for(const d of drops){if(Math.random()<=d[2])spawnDrop(d[0],d[1]||1,mx,my,mz)}}}
-function spawnMob(){if(mobs.length>=10)return;const a=Math.random()*6.283,d=22+Math.random()*22,x=Math.floor(P.x+Math.cos(a)*d),z=Math.floor(P.z+Math.sin(a)*d);
+function selectMobSpawn(){if(mobs.length>=10)return;const a=Math.random()*6.283,d=22+Math.random()*22,x=Math.floor(P.x+Math.cos(a)*d),z=Math.floor(P.z+Math.sin(a)*d);
  if(Math.abs(x)>7990||Math.abs(z)>7990)return;const y=surfY(x,z);if(getB(x,y,z)||getB(x,y+1,z))return;const gb=getB(x,y-1,z);
  const host=Math.random()<.4;
  const monsterGround=(gb===1||NMS[gb]==='雪ブロック'||NMS[gb]==='草ブロック');
@@ -127,8 +127,9 @@ function spawnMob(){if(mobs.length>=10)return;const a=Math.random()*6.283,d=22+M
  // 昼・朝・夕方には敵を新しく出さず、動物MOBだけ通常どおりスポーンさせる。
  const phase=worldClock/TOTAL_CYCLE;
  const isNight=phase>=.5;
- if(host){if(!isNight)return;if(!monsterGround)return;if(mobs.filter(m=>m.T.host).length>=3)return;addMob(['zombie','creeper','skeleton'][Math.floor(Math.random()*3)],x+.5,y,z+.5)}
- else{if(gb!=1)return;addMob(['pig','cow','sheep','chicken'][Math.floor(Math.random()*4)],x+.5,y,z+.5)}}
+ if(host){if(!isNight)return;if(!monsterGround)return;if(mobs.filter(m=>m.T.host).length>=3)return;return {type:['zombie','creeper','skeleton'][Math.floor(Math.random()*3)],x:x+.5,y,z:z+.5}}
+ else{if(gb!=1)return;return {type:['pig','cow','sheep','chicken'][Math.floor(Math.random()*4)],x:x+.5,y,z:z+.5}}}
+function spawnMob(){const candidate=selectMobSpawn();if(candidate)addMob(candidate.type,candidate.x,candidate.y,candidate.z)}
 let spT=-4,hpT=0;
 function mobTick(dt){spT+=dt;if(spT>2){spT=0;spawnMob()}
  hpT+=dt;if(hpT>4&&hp<20){hp++;hpT=0;updateHp()}
