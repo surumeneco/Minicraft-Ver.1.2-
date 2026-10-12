@@ -26,7 +26,7 @@ function create({flying=false,inv=false,keys={},P={},flow=[0,0],under=0}={}){
   getB:(x,y,z)=>{calls.push(['under',x,y,z]);return under}
  };
  vm.createContext(ctx);vm.runInContext(source,ctx);
- return {ctx,calls,speed:(d,c,w,h)=>ctx.playerMoveSpeed(flying,d,c,w,h),
+ return {ctx,calls,speed:(fl,d,c,w,h)=>ctx.playerMoveSpeed(fl,d,c,w,h),
   velocity:(dt,f,s,sp,iw,swimDash,sn=0,cs=1)=>ctx.advancePlayerVelocity(dt,f,s,sp,iw,swimDash,sn,cs)};
 }
 const near=(v,e)=>assert.ok(Math.abs(v-e)<1e-11,String(v)+' != '+String(e));
