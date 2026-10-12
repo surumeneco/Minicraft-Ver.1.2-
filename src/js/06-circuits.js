@@ -97,16 +97,25 @@ const TNTG=new THREE.BoxGeometry(1,1,1),TBG=new THREE.BoxGeometry(1.01,.3,1.01),
 function spawnPrimed(x,y,z,fuse){const g=new THREE.Group(),m=new THREE.Mesh(TNTG,tMatR),b=new THREE.Mesh(TBG,tMatB);m.position.y=.5;b.position.y=.5;g.add(m,b);g.position.set(x,y,z);scene.add(g);primed.push({g,m,b,x,y,z,t:fuse,vy:3.5})}
 function ignite(x,y,z,fuse){applyChanges([[x,y,z,0]]);spawnPrimed(x+.5,y,z+.5,fuse)}
 const FXG=new THREE.SphereGeometry(1,10,8);
-function blast(cx,cy,cz){const R=4,ch=[],tn=[],bx=Math.floor(cx),by=Math.floor(cy),bz=Math.floor(cz);
+// Scan affected blocks, retaining inventory-drop effects in scan order.
+function collectBlastBlockChanges(cx,cy,cz){const R=4,ch=[],tn=[],bx=Math.floor(cx),by=Math.floor(cy),bz=Math.floor(cz);
  for(let dx=-R;dx<=R;dx++)for(let dy=-R;dy<=R;dy++)for(let dz=-R;dz<=R;dz++){const d=Math.hypot(dx,dy,dz);if(d>R+.3)continue;const x=bx+dx,y=by+dy,z=bz+dz;if(y<1||y>=H)continue;
   const v=getB(x,y,z),bs=v&255;if(!v||bs===10||bs===18)continue;if(d>2.6&&hh(x,z,y+7)>.72)continue;
   if(bs===TNTB){tn.push([x,y,z]);ch.push([x,y,z,0]);continue}
   if(CONTB.has(bs)){const a=chests[rk(x,y,z)];if(a){for(const sl of a)if(sl)spawnDrop(sl[0],sl[1],x+.5,y+.5,z+.5);delete chests[rk(x,y,z)]}}
   ch.push([x,y,z,0])}
- applyChanges(ch);for(const[x,y,z]of tn)spawnPrimed(x+.5,y,z+.5,.4+Math.random()*.6);
- for(const p of primed)if(Math.hypot(p.x-cx,p.y-cy,p.z-cz)<R+1)p.t=Math.min(p.t,.4+Math.random()*.5);
+  return {R,ch,tn};
+}
+// Apply damage after block updates and all triggered TNT fuses are queued.
+function damageBlastEntities(cx,cy,cz){
  const pd=Math.hypot(P.x-cx,P.y+.9-cy,P.z-cz);if(pd<7)hurt(Math.max(1,Math.round((7-pd)*3)));
  for(const m of mobs.slice()){const d=Math.hypot(m.x-cx,m.y+.9-cy,m.z-cz);if(d<7){m.hp-=Math.round((7-d)*3);m.kx=(m.x-cx)/(d+.1)*8;m.kz=(m.z-cz)/(d+.1)*8;m.vy=5;if(m.hp<=0)rmMob(m)}}
+}
+function blast(cx,cy,cz){
+ const {R,ch,tn}=collectBlastBlockChanges(cx,cy,cz);
+ applyChanges(ch);for(const[x,y,z]of tn)spawnPrimed(x+.5,y,z+.5,.4+Math.random()*.6);
+ for(const p of primed)if(Math.hypot(p.x-cx,p.y-cy,p.z-cz)<R+1)p.t=Math.min(p.t,.4+Math.random()*.5);
+ damageBlastEntities(cx,cy,cz);
  const g=new THREE.Mesh(FXG,new THREE.MeshBasicMaterial({color:0xfff2c0,transparent:true,opacity:.8}));g.position.set(cx,cy,cz);scene.add(g);fxs.push({g,t:0})}
 function primedTick(dt){for(let i=primed.length-1;i>=0;i--){const p=primed[i];p.t-=dt;
   const fl=Math.floor(p.t*(p.t<1?8:4))%2===0;p.m.material=fl?tMatW:tMatR;p.b.material=fl?tMatW:tMatB;p.g.scale.setScalar(fl?1.06:1);
