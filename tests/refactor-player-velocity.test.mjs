@@ -35,7 +35,7 @@ test('speed calculation retains flying, sprint, crouch, water, honey priorities'
  const f=create();
  near(f.speed(false,false,false,false,false),4.5);
  near(f.speed(true,true,true,true,true),12);
- near(f.speed(true,false,false,true,true),9*.55*.4);
+ near(f.speed(false,true,false,true,true),9*.55*.4);
  near(f.speed(false,true,false,false,true),9*.4);
  near(f.speed(false,false,true,true,false),2.2*.55);
 });
