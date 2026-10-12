@@ -31,9 +31,18 @@ function advancePlayerVelocity(dt,f,s,sp,iw,swimDash,sn,cs){
  if(iw){P.vy*=1-2.5*dt;if(keys.Space&&!inv)P.vy=Math.min(P.vy+25*dt,3.5)}else if(keys.Space&&P.ground&&!inv){const under=getB(Math.floor(P.x),Math.floor(P.y-.08),Math.floor(P.z))&255;P.vy=under===HONEY?Math.sqrt(2*26*.3):8.5}}
  if(P.vy<-40)P.vy=-40;
 }
+// Preserve the 50ms step cap and exponential FPS estimate.
+function advanceFrameClock(now){
+ const dt=Math.min(.05,(now-last)/1000);last=now;fps+=(1/Math.max(dt,.001)-fps)*.05;
+ return dt;
+}
+// UI visibility and simulation state gate the original survival clock.
+function advanceHungerClock(dt){
+ if(gameStarted&&!pauseMenuOpen&&msg.style.display==='none'&&hunger>0){hungerTimer+=dt;if(hungerTimer>=300){const lost=Math.floor(hungerTimer/300);hunger=Math.max(0,hunger-lost);hungerTimer%=300;updateHp();save(false)}}
+}
 function loop(now){
  if(pauseMenuOpen){last=now;ren.render(scene,cam);requestAnimationFrame(loop);return}
- const dt=Math.min(.05,(now-last)/1000);last=now;fps+=(1/Math.max(dt,.001)-fps)*.05;
+ const dt=advanceFrameClock(now);
  const f=inv?0:(keys.KeyW?1:0)-(keys.KeyS?1:0),s=inv?0:(keys.KeyD?1:0)-(keys.KeyA?1:0);
  const sn=Math.sin(P.yaw),cs=Math.cos(P.yaw),ix=Math.floor(P.x),iz=Math.floor(P.z);
  const mid=getB(ix,Math.floor(P.y+.4),iz);
@@ -41,7 +50,7 @@ function loop(now){
  const crouching=!flying&&!inv&&(keys.ShiftLeft||keys.ShiftRight);
  shieldUp=!!(crouching&&equipped.shield);if(shieldFlash>0)shieldFlash-=dt;shieldEl.style.transform=(shieldUp?'translateY(3%)':'translateY(130%)')+' rotate(-20deg)'+(shieldFlash>0?' scale(1.08)':'');
  const dashing=!flying&&!inv&&keys.KeyW&&keys.KeyR&&hunger>3;sprintAmt+=((dashing?1:0)-sprintAmt)*Math.min(1,8*dt);
- if(gameStarted&&!pauseMenuOpen&&msg.style.display==='none'&&hunger>0){hungerTimer+=dt;if(hungerTimer>=300){const lost=Math.floor(hungerTimer/300);hunger=Math.max(0,hunger-lost);hungerTimer%=300;updateHp();save(false)}}
+ advanceHungerClock(dt);
  const inWater=isW(mid)||[-.35,.05,.45,1.2].some(o=>isW(getB(ix,Math.floor(P.y+o),iz)));
  const onHoney=!flying&&honeyContact(P.x,P.y,P.z);
  const iw=inWater&&!flying,swimDash=iw&&dashing,sp=playerMoveSpeed(flying,dashing,crouching,iw,onHoney);
