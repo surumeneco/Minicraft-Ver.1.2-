@@ -123,7 +123,23 @@ function stepMob(m,dt){const T=m.T,dx=P.x-m.x,dz=P.z-m.z,dist=Math.hypot(dx,dz);
 function pickMob(){const o=cam.position;let best=null;
  for(const m of mobs){const vx=m.x-o.x,vy=m.y+m.T.h/2-o.y,vz=m.z-o.z,t=vx*rdir.x+vy*rdir.y+vz*rdir.z;if(t<0||t>4.5)continue;
   const d2=vx*vx+vy*vy+vz*vz-t*t,rr=Math.max(m.T.w,m.T.h*.6)/2+.1;if(d2<rr*rr&&(!best||t<best.t))best={m,t}}return best}
-function attack(m){const wi=equipped.weapon,damage=wi?ITEMS[wi].damage:5;m.hp-=damage;m.kx=-Math.sin(P.yaw)*(wi?9:7);m.kz=-Math.cos(P.yaw)*(wi?9:7);m.vy=5;if(wi&&ITEMS[wi].dur>0)ITEMS[wi].dur--;if(!m.T.host){m.fleeT=3;m.yaw=P.yaw+Math.PI}if(m.hp<=0){const drops=m.T.drops||[];const mx=m.x,my=m.y+0.8,mz=m.z;rmMob(m);for(const d of drops){if(Math.random()<=d[2])spawnDrop(d[0],d[1]||1,mx,my,mz)}}}
+// Keep knockback and item durability effects before checking death.
+function applyMeleeHit(m){
+ const wi=equipped.weapon,damage=wi?ITEMS[wi].damage:5;
+ m.hp-=damage;
+ m.kx=-Math.sin(P.yaw)*(wi?9:7);
+ m.kz=-Math.cos(P.yaw)*(wi?9:7);
+ m.vy=5;
+ if(wi&&ITEMS[wi].dur>0)ITEMS[wi].dur--;
+ if(!m.T.host){m.fleeT=3;m.yaw=P.yaw+Math.PI}
+}
+// Death removes the entity before rolling independent drops.
+function dropDefeatedMob(m){
+ const drops=m.T.drops||[],mx=m.x,my=m.y+0.8,mz=m.z;
+ rmMob(m);
+ for(const d of drops)if(Math.random()<=d[2])spawnDrop(d[0],d[1]||1,mx,my,mz);
+}
+function attack(m){applyMeleeHit(m);if(m.hp<=0)dropDefeatedMob(m)}
 function selectMobSpawn(){if(mobs.length>=10)return;const a=Math.random()*6.283,d=22+Math.random()*22,x=Math.floor(P.x+Math.cos(a)*d),z=Math.floor(P.z+Math.sin(a)*d);
  if(Math.abs(x)>7990||Math.abs(z)>7990)return;const y=surfY(x,z);if(getB(x,y,z)||getB(x,y+1,z))return;const gb=getB(x,y-1,z);
  const host=Math.random()<.4;
