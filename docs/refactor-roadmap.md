@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `1de46ad0028c94546b9467d25f2a16b7ab3fccd5`（2026-10-11）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `481afd9170e254817af03b388bed4eb5a374f687`（2026-10-12）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -13,7 +13,7 @@
 | 1 | Block ID/状態の境界（01, 03, 05, 06, 07） | 8bit ID/高位状態の契約をテスト化し、基礎ヘルパーを導入。今後の全呼出箇所統一は未着手 | 一部完了（blockBaseId/blockState） |
 | 2 | メッシュの頂点色・照明・AO（03, 05） | 頂点色の角AO・ブロック光、光源探索・減衰伝播を分離済。atlas UV更新などは残存 | 一部完了（meshVertexColor/collectBlockLightSources/propagateBlockLight） |
 | 3 | 地形生成・装飾（03） | 地形列・樹木装飾・保存済み編集の適用を独立化。鉱石・洞窟、草花の細分化は残存 | 一部完了（fillTerrainColumn/decorateChunkTrees/replayChunkEdits） |
-| 4 | 回路・機構（06） | コンテナ格納、ダスト伝播、ピストン押し出し探索、ホッパー入出力、コンパレーター比較・減算を分離。リピーター・オブザーバー・ピストンアニメーション・TNTは残存 | 一部完了（hopperPushOutput/hopperPullInput/calculateComparatorOutput 等） |
+| 4 | 回路・機構（06） | リピーター遅延、オブザーバー変化検知、ピストンアニメーション完了、TNTブロック走査・ダメージ、回路tick時間制御を分離。信号収集・導火線管理・回路全体の副作用整理は残存 | 一部完了（updateRepeaterState/updateObserverState/finishPistonAnimation/collectBlastBlockChanges/damageBlastEntities/advanceCircuitClock 等） |
 | 5 | Mob・戦闘・投射物（05） | 行動判断・Mob移動物理・矢の移動/命中処理を分離。被ダメージ・スポーン・Mob描画・投射物の生成は残存 | 一部完了（chooseMobSpeed/advanceMobPhysics/advanceArrowMotion/resolveArrowCollision） |
 | 6 | 移動・入力・ゲームループ（04-1, 08） | HUD文字列とプレイヤーの衝突・段差・着地を分離。キー状態・速度計算・カメラ・HUD更新時刻・フレーム更新は残存 | 一部完了（formatHudText/advancePlayerCollision） |
 | 7 | 所持品・クラフト・UI（04-0, 09） | 装備・所持品・ホットバー・2×2クラフトの画面生成を分離。所持品の状態更新・装備操作・クラフト検証と描画の依存整理は残存 | 一部完了（renderInventoryEquipmentPanel/OwnedSlots/Hotbar/Crafting） |
@@ -91,10 +91,21 @@
 
 ### 次回以降の残作業
 
-1. 回路のリピーター遅延・オブザーバー検出、ピストンアニメーション、TNTの爆風・ドロップ・ノックバックを機能単位に分割。
+1. 回路の出力信号収集・各パルス減衰処理、TNTの導火線更新と爆発エフェクト、ピストン周辺の視覚表現を機能単位に分割。
 2. プレイヤー速度・水中判定・スタミナ/満腹度の進行とフレーム制御、Mobスポーン・被ダメージの分離。
 3. インベントリの状態更新・装備操作・2×2クラフトの責務整理とDOM統合テスト。
 4. ZIP DEFLATE展開・実画像のatlas適用/解除とテクスチャ・設定の再描画連携。
 5. 地形生成・描画処理の残存部分とブロック状態アクセサ利用の拡大。
 
 実機未検証の項目（WebGL描画、操作、既存セーブ、実ZIPデータ）とCAT-TDD正式ゲートは依然として未実施。
+
+## 追加実施：回路状態遷移・TNT・ピストン完了・時刻管理（2026-10-12）
+
+- `feature/refactor-repeater-observer-transitions` → `ad8f908`: `updateRepeaterState()`、`updateObserverState()` を抽出。リピーター遅延・中断、オブザーバー初回観測・変化時のパルスと向きをテスト。
+- `feature/refactor-tnt-blast-effects` → `5b3ce18`: `collectBlastBlockChanges()`、`damageBlastEntities()` を抽出。チェスト内容物の先行ドロップ、連鎖導火線、破壊対象、エンティティ被害・反動と処理順を固定。
+- `feature/refactor-piston-animation-completion` → `00d2f30`: `finishPistonAnimation()` を抽出。0.1秒の進行、ブロックの更新順、吸着/通常格納、エンティティ移動・終了時解放をテスト。
+- `feature/refactor-circuit-tick-scheduling` → `481afd9`: `advanceCircuitClock()` を抽出。流体→回路→TNT→ピストンの更新順、10Hz更新、1フレーム3回制限、処理遅延の消化/破棄をテスト。
+
+**別課題にする挙動候補:** `pushEnt()` はピストン伸長時に複数セルを順に調べるため、移動したエンティティが次のセルにも該当すると連続して複数ブロック分移動する。既存挙動を回帰テストに固定したが、仕様として妥当かは別途判断が必要。リファクタリングの範囲では変更していない。
+
+**検証範囲:** 各featureにおける変更前・変更後のNode.js CIは成功。ブラウザ実機、WebGL視覚的一致、実セーブデータ、CAT-TDD正式ゲートの確認は未実施。
