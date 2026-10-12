@@ -167,8 +167,13 @@ function mobTick(dt){advanceMobTimers(dt);updateMobPopulation(dt)}
 updateHp();
 // ---- 矢 ----
 const arrows=[],AG=new THREE.BoxGeometry(.05,.05,.7),AM=new THREE.MeshLambertMaterial({color:0x8a6a3a});
-function shoot(m){const x=m.x,y=m.y+1.5,z=m.z,dx=P.x-x,dy=P.y+1.2-y,dz=P.z-z,d=Math.hypot(dx,dy,dz),t=d/18,r=()=>(Math.random()-.5)*1.2;
- const g=new THREE.Mesh(AG,AM);scene.add(g);arrows.push({g,x,y,z,vx:dx/t+r(),vy:dy/t+5*t+r(),vz:dz/t+r(),life:6})}
+// Generate the three directional random offsets after the projectile mesh is added.
+function calculateArrowVelocity(dx,dy,dz,t){
+ const r=()=>(Math.random()-.5)*1.2;
+ return {vx:dx/t+r(),vy:dy/t+5*t+r(),vz:dz/t+r()};
+}
+function shoot(m){const x=m.x,y=m.y+1.5,z=m.z,dx=P.x-x,dy=P.y+1.2-y,dz=P.z-z,d=Math.hypot(dx,dy,dz),t=d/18;
+ const g=new THREE.Mesh(AG,AM);scene.add(g);arrows.push({g,x,y,z,...calculateArrowVelocity(dx,dy,dz,t),life:6})}
 // Integrate projectile position before evaluating collisions.
 function advanceArrowMotion(a,dt){
  a.life-=dt;
