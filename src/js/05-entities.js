@@ -136,9 +136,18 @@ function selectMobSpawn(){if(mobs.length>=10)return;const a=Math.random()*6.283,
  else{if(gb!=1)return;return {type:['pig','cow','sheep','chicken'][Math.floor(Math.random()*4)],x:x+.5,y,z:z+.5}}}
 function spawnMob(){const candidate=selectMobSpawn();if(candidate)addMob(candidate.type,candidate.x,candidate.y,candidate.z)}
 let spT=-4,hpT=0;
-function mobTick(dt){spT+=dt;if(spT>2){spT=0;spawnMob()}
- hpT+=dt;if(hpT>4&&hp<20){hp++;hpT=0;updateHp()}
- for(const m of mobs.slice()){if(Math.hypot(m.x-P.x,m.z-P.z)>60){rmMob(m);continue}stepMob(m,dt)}}
+// Advance spawn and healing clocks once per frame, preserving strict thresholds.
+function advanceMobTimers(dt){
+ spT+=dt;
+ if(spT>2){spT=0;spawnMob()}
+ hpT+=dt;
+ if(hpT>4&&hp<20){hp++;hpT=0;updateHp()}
+}
+// Remove distant mobs before running their AI, keeping snapshot iteration order.
+function updateMobPopulation(dt){
+ for(const m of mobs.slice()){if(Math.hypot(m.x-P.x,m.z-P.z)>60){rmMob(m);continue}stepMob(m,dt)}
+}
+function mobTick(dt){advanceMobTimers(dt);updateMobPopulation(dt)}
 updateHp();
 // ---- 矢 ----
 const arrows=[],AG=new THREE.BoxGeometry(.05,.05,.7),AM=new THREE.MeshLambertMaterial({color:0x8a6a3a});
