@@ -170,6 +170,14 @@ async function readZip(buf){
 function tintCanvas(cv,t){const c=cv.getContext('2d'),d=c.getImageData(0,0,cv.width,cv.height),a=d.data;for(let i=0;i<a.length;i+=4){a[i]=a[i]*t[0]/255;a[i+1]=a[i+1]*t[1]/255;a[i+2]=a[i+2]*t[2]/255}c.putImageData(d,0,0)}
 function refreshAtlas(){tex.dispose();tex.needsUpdate=true;atlasStyle.textContent=`.ic{background-image:url(${ac.toDataURL()});image-rendering:pixelated}`}
 function collectPackHits(bm){const hits=[];for(let t=0;t<N;t++){const sp=FM[t];if(!sp)continue;for(const nm of sp.split('|')){const[f,fl]=nm.split('#');if(bm[f]){hits.push([t,bm[f],fl||'',f]);break}}}return hits}
+// Paint a resolved set of texture images onto the atlas in tile order.
+function paintPackAtlas(g,tc,T,hits,bm){
+ const x2=tc.getContext('2d');
+ const draw=(b,fl)=>{const sw=Math.min(b.width,b.height);x2.clearRect(0,0,T,T);x2.imageSmoothingEnabled=false;x2.drawImage(b,0,0,sw,sw,0,0,T,T);if(TINT[fl])tintCanvas(tc,TINT[fl])};
+ for(const[t,b,fl,f]of hits){const cx=(t%CO)*T,cy=Math.floor(t/CO)*T;if(f.includes('glass'))g.clearRect(cx,cy,T,T);
+  draw(b,fl==='s'?'':fl);g.drawImage(tc,cx,cy);
+  if(fl==='s'&&bm.grass_block_side_overlay){draw(bm.grass_block_side_overlay,'g');g.drawImage(tc,cx,cy)}}
+}
 async function applyPack(map){
  const bm={};for(const[k,v]of map){if(!FILES.has(k))continue;try{bm[k]=await createImageBitmap(new Blob([v],{type:'image/png'}))}catch(e){}}
  const hits=collectPackHits(bm);
@@ -177,11 +185,8 @@ async function applyPack(map){
  let T=16;hits.forEach(h=>T=Math.max(T,Math.min(128,Math.min(h[1].width,h[1].height))));
  const base=document.createElement('canvas');base.width=16*CO;base.height=16*RW;base.getContext('2d').putImageData(im,0,0);
  ac.width=T*CO;ac.height=T*RW;const g=ac.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(base,0,0,ac.width,ac.height);
- const tc=document.createElement('canvas');tc.width=tc.height=T;const x2=tc.getContext('2d');
- const draw=(b,fl)=>{const sw=Math.min(b.width,b.height);x2.clearRect(0,0,T,T);x2.imageSmoothingEnabled=false;x2.drawImage(b,0,0,sw,sw,0,0,T,T);if(TINT[fl])tintCanvas(tc,TINT[fl])};
- for(const[t,b,fl,f]of hits){const cx=(t%CO)*T,cy=Math.floor(t/CO)*T;if(f.includes('glass'))g.clearRect(cx,cy,T,T);
-  draw(b,fl==='s'?'':fl);g.drawImage(tc,cx,cy);
-  if(fl==='s'&&bm.grass_block_side_overlay){draw(bm.grass_block_side_overlay,'g');g.drawImage(tc,cx,cy)}}
+ const tc=document.createElement('canvas');tc.width=tc.height=T;
+ paintPackAtlas(g,tc,T,hits,bm);
  refreshAtlas();
  try{localStorage.setItem(PK,JSON.stringify({n:N,d:ac.toDataURL('image/png')}))}catch(e){toast('※容量の都合で、次回起動時は標準テクスチャに戻ります')}
  return hits.length}
