@@ -40,6 +40,15 @@ function advanceFrameClock(now){
 function advanceHungerClock(dt){
  if(gameStarted&&!pauseMenuOpen&&msg.style.display==='none'&&hunger>0){hungerTimer+=dt;if(hungerTimer>=300){const lost=Math.floor(hungerTimer/300);hunger=Math.max(0,hunger-lost);hungerTimer%=300;updateHp();save(false)}}
 }
+// Preserve camera translation, FOV projection and rotation update order.
+function updatePlayerCamera(){
+ cam.position.set(P.x,P.y+1.6,P.z);{const tf=cfg.fov+(cfg.sprintFov?12*sprintAmt:0);if(Math.abs(cam.fov-tf)>.01){cam.fov=tf;cam.updateProjectionMatrix()}}cam.rotation.set(P.pitch,P.yaw,0);
+}
+// Reconfigure underwater overlays only when the water-contact state changes.
+function updateUnderwaterVisuals(){
+ const nu=isW(getB(Math.floor(P.x),Math.floor(P.y+1.6),Math.floor(P.z)));
+ if(nu!=uw){uw=nu;uwOverlay.style.opacity=uw?1:0;if(CLD.m)CLD.m.visible=!uw;const c=uw?0x1d4a8c:0x87ceeb;scene.fog.color.set(c);scene.background.set(c);scene.fog.near=uw?.1:Math.min(35,Math.max(16,RD*16-10)-1);scene.fog.far=uw?24:Math.max(16,RD*16-10)}
+}
 function loop(now){
  if(pauseMenuOpen){last=now;ren.render(scene,cam);requestAnimationFrame(loop);return}
  const dt=advanceFrameClock(now);
@@ -56,9 +65,8 @@ function loop(now){
  const iw=inWater&&!flying,swimDash=iw&&dashing,sp=playerMoveSpeed(flying,dashing,crouching,iw,onHoney);
  const bodyHit=swimDash?hitSwim:hit;
  advancePlayerVelocity(dt,f,s,sp,iw,swimDash,sn,cs);advancePlayerCollision(dt,bodyHit,crouching,iw,swimDash,f,s);
- cam.position.set(P.x,P.y+1.6,P.z);{const tf=cfg.fov+(cfg.sprintFov?12*sprintAmt:0);if(Math.abs(cam.fov-tf)>.01){cam.fov=tf;cam.updateProjectionMatrix()}}cam.rotation.set(P.pitch,P.yaw,0);
- const nu=isW(getB(Math.floor(P.x),Math.floor(P.y+1.6),Math.floor(P.z)));
- if(nu!=uw){uw=nu;uwOverlay.style.opacity=uw?1:0;if(CLD.m)CLD.m.visible=!uw;const c=uw?0x1d4a8c:0x87ceeb;scene.fog.color.set(c);scene.background.set(c);scene.fog.near=uw?.1:Math.min(35,Math.max(16,RD*16-10)-1);scene.fog.far=uw?24:Math.max(16,RD*16-10)}
+ updatePlayerCamera();
+ updateUnderwaterVisuals();
  target=ray();if(target){hl.visible=true;hl.position.set(target.x+.5,target.y+.5,target.z+.5)}else hl.visible=false;
  updateDayNight(dt); updateBlockGlows(dt); circuitTick(dt);mobTick(dt);arrowTick(dt);cloudTick(dt);dropTick(dt);stream();
  if(++fr%15==0)hud.textContent=formatHudText(crouching,swimDash,dashing,ix,iz);
