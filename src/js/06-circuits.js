@@ -179,7 +179,14 @@ function rsTick(){const list=[];
    case DISPENSER:case DROPPER:{const p=cpow(x,y,z)>0;if(p&&!c.pw)fireCont(c);c.pw=p;break}
    case HOPPER:c.ht=(c.ht||0)+1;if(c.ht>=4){c.ht=0;hopperStep(c)}break}}
  if(ch.length)applyChanges(ch);circuitOn=EM.size>0}
-function circuitTick(dt){fluidTick(dt);rsAcc+=dt;let n=0;while(rsAcc>=.1&&n<3){rsAcc-=.1;n++;rsTick()}if(rsAcc>.3)rsAcc=0;primedTick(dt);animTick(dt)}
+// Bound the number of redstone updates executed in a single frame.
+function advanceCircuitClock(dt){
+ rsAcc+=dt;
+ let n=0;
+ while(rsAcc>=.1&&n<3){rsAcc-=.1;n++;rsTick()}
+ if(rsAcc>.3)rsAcc=0;
+}
+function circuitTick(dt){fluidTick(dt);advanceCircuitClock(dt);primedTick(dt);animTick(dt)}
 function breakRS(x,y,z,v){const bs=v&255;
  if(CONTB.has(bs)){const k=rk(x,y,z),a=chests[k];if(a)for(const sl of a)if(sl)spawnDrop(sl[0],sl[1],x+.5,y+.7,z+.5);delete chests[k];give(bs,1)}
  else if(bs===RED_DUST)give(I.redstone,1);
