@@ -19,6 +19,18 @@ function advancePlayerCollision(dt,bodyHit,crouching,iw,swimDash,f,s){
  if(bl&&iw&&!swimDash&&(f||s)&&!hit(P.x+Math.sign(P.vx)*.4,P.y+1.1,P.z+Math.sign(P.vz)*.4))P.vy=Math.max(P.vy,7);
  const ny=P.y+P.vy*dt;if(!bodyHit(P.x,ny,P.z))P.y=ny;else{if(P.vy<0){const impact=-P.vy;P.ground=true;if(!flying&&slimeUnder(P.x,P.y,P.z,R))P.vy=impact*Math.SQRT1_2;else P.vy=0;if(flying){flying=false;toast('飛行モード OFF')}}else P.vy=0}
 }
+// Match original speed precedence: flight overrides all ground/environment modifiers.
+function playerMoveSpeed(flying,dashing,crouching,iw,onHoney){
+ return flying?12:(dashing?9:(crouching?2.2:4.5))*(iw?.55:1)*(onHoney?.4:1);
+}
+// Apply current key, look direction and environmental forces before collision handling.
+function advancePlayerVelocity(dt,f,s,sp,iw,swimDash,sn,cs){
+ if(swimDash){const cp=Math.cos(P.pitch),dx=-Math.sin(P.yaw)*cp,dy=-Math.sin(P.pitch),dz=-Math.cos(P.yaw)*cp;P.vx=dx*9;P.vy=dy*9;P.vz=dz*9}else{P.vx=(-sn*f+cs*s)*sp;P.vz=(-cs*f-sn*s)*sp;
+ if(!flying){updFlow(P,Math.floor(P.x),[P.y+.4,P.y+.05,P.y+1.0],Math.floor(P.z),dt);P.vx+=P.fx;P.vz+=P.fz}else{P.fx=P.fz=0}}
+ if(flying)P.vy=((keys.Space&&!inv?1:0)-((keys.ShiftLeft||keys.ShiftRight)&&!inv?1:0))*9;else if(swimDash){}else{P.vy-=(iw?9:26)*dt;
+ if(iw){P.vy*=1-2.5*dt;if(keys.Space&&!inv)P.vy=Math.min(P.vy+25*dt,3.5)}else if(keys.Space&&P.ground&&!inv){const under=getB(Math.floor(P.x),Math.floor(P.y-.08),Math.floor(P.z))&255;P.vy=under===HONEY?Math.sqrt(2*26*.3):8.5}}
+ if(P.vy<-40)P.vy=-40;
+}
 function loop(now){
  if(pauseMenuOpen){last=now;ren.render(scene,cam);requestAnimationFrame(loop);return}
  const dt=Math.min(.05,(now-last)/1000);last=now;fps+=(1/Math.max(dt,.001)-fps)*.05;
@@ -32,13 +44,9 @@ function loop(now){
  if(gameStarted&&!pauseMenuOpen&&msg.style.display==='none'&&hunger>0){hungerTimer+=dt;if(hungerTimer>=300){const lost=Math.floor(hungerTimer/300);hunger=Math.max(0,hunger-lost);hungerTimer%=300;updateHp();save(false)}}
  const inWater=isW(mid)||[-.35,.05,.45,1.2].some(o=>isW(getB(ix,Math.floor(P.y+o),iz)));
  const onHoney=!flying&&honeyContact(P.x,P.y,P.z);
- const iw=inWater&&!flying,swimDash=iw&&dashing,sp=flying?12:(dashing?9:(crouching?2.2:4.5))*(iw?.55:1)*(onHoney?.4:1);
+ const iw=inWater&&!flying,swimDash=iw&&dashing,sp=playerMoveSpeed(flying,dashing,crouching,iw,onHoney);
  const bodyHit=swimDash?hitSwim:hit;
- if(swimDash){const cp=Math.cos(P.pitch),dx=-Math.sin(P.yaw)*cp,dy=-Math.sin(P.pitch),dz=-Math.cos(P.yaw)*cp;P.vx=dx*9;P.vy=dy*9;P.vz=dz*9}else{P.vx=(-sn*f+cs*s)*sp;P.vz=(-cs*f-sn*s)*sp;
- if(!flying){updFlow(P,Math.floor(P.x),[P.y+.4,P.y+.05,P.y+1.0],Math.floor(P.z),dt);P.vx+=P.fx;P.vz+=P.fz}else{P.fx=P.fz=0}}
- if(flying)P.vy=((keys.Space&&!inv?1:0)-((keys.ShiftLeft||keys.ShiftRight)&&!inv?1:0))*9;else if(swimDash){}else{P.vy-=(iw?9:26)*dt;
- if(iw){P.vy*=1-2.5*dt;if(keys.Space&&!inv)P.vy=Math.min(P.vy+25*dt,3.5)}else if(keys.Space&&P.ground&&!inv){const under=getB(Math.floor(P.x),Math.floor(P.y-.08),Math.floor(P.z))&255;P.vy=under===HONEY?Math.sqrt(2*26*.3):8.5}}
- if(P.vy<-40)P.vy=-40;advancePlayerCollision(dt,bodyHit,crouching,iw,swimDash,f,s);
+ advancePlayerVelocity(dt,f,s,sp,iw,swimDash,sn,cs);advancePlayerCollision(dt,bodyHit,crouching,iw,swimDash,f,s);
  cam.position.set(P.x,P.y+1.6,P.z);{const tf=cfg.fov+(cfg.sprintFov?12*sprintAmt:0);if(Math.abs(cam.fov-tf)>.01){cam.fov=tf;cam.updateProjectionMatrix()}}cam.rotation.set(P.pitch,P.yaw,0);
  const nu=isW(getB(Math.floor(P.x),Math.floor(P.y+1.6),Math.floor(P.z)));
  if(nu!=uw){uw=nu;uwOverlay.style.opacity=uw?1:0;if(CLD.m)CLD.m.visible=!uw;const c=uw?0x1d4a8c:0x87ceeb;scene.fog.color.set(c);scene.background.set(c);scene.fog.near=uw?.1:Math.min(35,Math.max(16,RD*16-10)-1);scene.fog.far=uw?24:Math.max(16,RD*16-10)}
