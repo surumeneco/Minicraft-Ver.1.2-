@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `d620bafe0d301bad5213ca57351f873e8ee3677f`（2026-10-14、今回feature作成時）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `a4404d002d4a685a5234bf07beb9f5ca004f9d03`（2026-10-14、今回feature作成時）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -13,7 +13,7 @@
 | 1 | Block ID/状態の境界（01, 03, 05, 06, 07） | 8bit ID/高位状態の契約をテスト化し、基礎ヘルパーを導入。今後の全呼出箇所統一は未着手 | 一部完了（blockBaseId/blockState） |
 | 2 | メッシュの頂点色・照明・AO（03, 05） | 頂点色の角AO・ブロック光、光源探索・減衰伝播を分離済。atlas UV更新などは残存 | 一部完了（meshVertexColor/collectBlockLightSources/propagateBlockLight） |
 | 3 | 地形生成・装飾（03） | 地形列・樹木装飾・保存済み編集の適用を独立化。鉱石・洞窟、草花の細分化は残存 | 一部完了（fillTerrainColumn/decorateChunkTrees/replayChunkEdits） |
-| 4 | 回路・機構（06） | リピーター遅延、オブザーバー変化検知、ピストンアニメーション完了、TNTブロック走査・ダメージ、回路tick時間制御を分離。信号収集・導火線管理・回路全体の副作用整理は残存 | 一部完了（updateRepeaterState/updateObserverState/finishPistonAnimation/collectBlastBlockChanges/damageBlastEntities/advanceCircuitClock 等） |
+| 4 | 回路・機構（06） | リピーター遅延、オブザーバー変化検知、ピストンアニメーション完了、TNTブロック走査・ダメージ、回路tick時間制御を分離。信号源の収集を分離済み。導火線管理・回路全体の副作用整理と統合検証は残存 | 一部完了（updateRepeaterState/updateObserverState/finishPistonAnimation/collectBlastBlockChanges/damageBlastEntities/advanceCircuitClock 等） |
 | 5 | Mob・戦闘・投射物（05） | Mob判断・移動・スポーン・体力処理、近接ヒットと死亡ドロップ、矢の速度生成・移動・命中を分離済。Mob描画・クリーパー爆発・攻撃全般の統合検証は残存 | 一部完了（applyMeleeHit/dropDefeatedMob/calculateArrowVelocity 等） |
 | 6 | 移動・入力・ゲームループ（04-1, 08） | HUD・衝突・移動速度・速度ベクトル・フレーム時刻とFPS・空腹度・カメラ・水中表示を分離済。キー状態、フレーム全体の連携テストは残存 | 一部完了（advanceFrameClock/advanceHungerClock/updatePlayerCamera/updateUnderwaterVisuals 等） |
 | 7 | 所持品・クラフト・UI（04-0, 09） | 装備・所持品・ホットバー・2×2クラフトの画面生成とクラフト完成時の副作用を分離。所持品の状態更新・装備操作・DOM連携と保存の統合検証は残存 | 一部完了（renderInventoryEquipmentPanel/OwnedSlots/Hotbar/Crafting） |
@@ -213,3 +213,10 @@
 - `tests/refactor-craft-slot-hydration.test.mjs`：`04-0-player-ui.js` の `restoreSurvivalState()` と `09-inventory.js` の実初期化を連結し、保存済み配列の内容・切り詰め・補完・数値検証・生存状態の復元を5件で固定。
 - テストのみ `d9261f2` のCI成功（Run #38502124816）。実装 `2b3610d` のCIは失敗（Run #38502165235）：既存 `tests/issue-5-crafting.test.mjs` が初期化1行だけを取り出し新しい依存関数を読み込まずReferenceErrorに。検証アサーションを変えず、依存関数もVMへ読み込むよう修正（`ff0b176`）。修正後CI成功（Run #38502233863）。
 - 保存形式は変更しない。引き続き、実ブラウザでのロード直後のインベントリ描画、チェストや装備との同時操作、画面操作とセーブの統合E2Eは未検証。
+
+## 追加実施：レッドストーン信号源の収集（2026-10-14）
+
+- `feature/refactor-circuit-source-emission-20261014`：`rsTick()` から `collectCircuitSignalSources(list)` を抽出。レッドストーン登録の選別・状態取得後に呼び出し、出力Map `EM` の初期化、ボタン/ターゲット/オブザーバーのカウンタ減算、感圧板の設置判定、6方向と指向性信号出力を従来順に実施する。
+- `tests/refactor-circuit-source-emission.test.mjs`：元の`rsTick()`をVM実行する4件の回帰テスト。ブロック/トーチ/レバーの6方向、リピーター/オブザーバー/コンパレーターの指向性、減算後パルス、コンパレーターの前tick `c.out`、遠距離と不正な登録の処理を検証。
+- 変更前テストのみ `3303be6` でCI成功（Run #38502491758）。実装 `e1defbe` でCI成功（Run #38502534633）。
+- **未検証:** 実ブラウザ上の回路・描画の同期、信号伝播と全機構の統合・複雑なクロック回路、TNT導火線/アニメーションの長時間副作用。既存のタイミングや出力強度の仕様は変更していない。
