@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `8f3073e0caa722eca2af2f8105c2f246cf143fc3`（2026-10-14、今回feature作成時）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `09d8f451bc7cfda3e4da8a494ce71ff0ad38dbd7`（2026-10-14、今回feature作成時）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -185,3 +185,10 @@
 - `tests/refactor-resource-pack-atlas-reset.test.mjs`：保存キー削除、Canvas縦横更新、元画像の再描画、atlasのテクスチャ更新、通知の順を模擬Canvasでテスト。ストレージ削除例外があっても復元する動作、およびCanvas描画例外を成功扱いしない動作を固定。
 - 変更前テストのみの `2e117b0` でCI成功（Run #38497381055）。実装 `83faf5a` でCI成功（Run #38497417631）。
 - **未検証:** ブラウザCanvasによる見た目とテクスチャ転送、`createImageBitmap` 実PNGデコード、旧保存のアトラス画像を起動時に復元する経路、WebGL表示と古いセーブデータの相互作用。
+
+## 追加実施：押下継続中の入力再発行（2026-10-14）
+
+- `feature/refactor-held-mouse-dispatch-20261014`：`04-1-input.js` の180ms長押し再発行を `repeatHeldBlockBreak()` / `repeatHeldBlockPlacement()` に抽出。タイマー設定、ガード、ターゲットMob/ブロック選別、合成`MouseEvent('mousedown')`のイベント属性と副作用順を維持。
+- `tests/refactor-held-mouse-dispatch.test.mjs`：元のイベント登録・interval callbackを実行する4件の回帰テスト。左押下のMob優先、ターゲット/押下解放、右押下のインタラクティブブロック除外、食料・ポーズ・ポインタ条件を検証。
+- テストのみのコミット `0cc8ed5` でCI成功（Run #38501336207）。実装 `ab3df21` でCI成功（Run #38501386757）。
+- **未検証:** ブラウザにおける合成mousedownのイベント配送先、ポインタロック状態、実マウスの同時押し/解放、長押しタイマーの実時間、インベントリ・チェストとのE2E連携。再発行による既存の副作用そのものは変更しない。

@@ -72,27 +72,29 @@ function releaseMouseInput(){foodRightHeld=false;clearTimeout(foodEatTimer);food
 addEventListener('mouseup',releaseMouseInput);
 // 左ボタン長押し中は、狙っているブロックの破壊操作を一定間隔で繰り返す
 let leftBreakHeld=false,leftBreakTimer=0;
-addEventListener('mousedown',e=>{
- if(pauseMenuOpen||e.button!==0||msg.style.display!=='none'||inv||!(locked||fallback)||(e.target.closest&&e.target.closest('#bar')))return;
- leftBreakHeld=true;clearInterval(leftBreakTimer);
- leftBreakTimer=setInterval(()=>{
+function repeatHeldBlockBreak(){
   if(pauseMenuOpen||!leftBreakHeld||msg.style.display!=='none'||inv||!(locked||fallback)||!target)return;
   const mh=pickMob();if(mh&&(!target||mh.t<target.t))return;
   const ev=new MouseEvent('mousedown',{button:0,bubbles:true,cancelable:true});dispatchEvent(ev);
- },180);
+ }
+addEventListener('mousedown',e=>{
+ if(pauseMenuOpen||e.button!==0||msg.style.display!=='none'||inv||!(locked||fallback)||(e.target.closest&&e.target.closest('#bar')))return;
+ leftBreakHeld=true;clearInterval(leftBreakTimer);
+ leftBreakTimer=setInterval(repeatHeldBlockBreak,180);
 });
 // 右ボタン長押し中は、通常ブロックへの設置操作だけを一定間隔で繰り返す
 let rightPlaceHeld=false,rightPlaceTimer=0;
-addEventListener('mousedown',e=>{
- if(pauseMenuOpen||e.button!==2||msg.style.display!=='none'||document.getElementById('startGuide')?.style.display==='flex'||inv||!(locked||fallback))return;
- const selectedId=hot[sel];if(isItem(selectedId)&&ITEMS[selectedId]?.type==='food')return;
- rightPlaceHeld=true;clearInterval(rightPlaceTimer);
- rightPlaceTimer=setInterval(()=>{
+function repeatHeldBlockPlacement(){
   if(pauseMenuOpen||!rightPlaceHeld||msg.style.display!=='none'||inv||!(locked||fallback)||!target)return;
   const tv=getB(target.x,target.y,target.z)&255;
   if(CONTB.has(tv)||tv===LEVER||tv===STONE_BUTTON||tv===PRESSURE||tv===RED_DUST||tv===REPEATER||tv===COMPARATOR||tv===OBSERVER||tv===DISPENSER||tv===DROPPER)return;
   const ev=new MouseEvent('mousedown',{button:2,bubbles:true,cancelable:true});dispatchEvent(ev);
- },180);
+ }
+addEventListener('mousedown',e=>{
+ if(pauseMenuOpen||e.button!==2||msg.style.display!=='none'||document.getElementById('startGuide')?.style.display==='flex'||inv||!(locked||fallback))return;
+ const selectedId=hot[sel];if(isItem(selectedId)&&ITEMS[selectedId]?.type==='food')return;
+ rightPlaceHeld=true;clearInterval(rightPlaceTimer);
+ rightPlaceTimer=setInterval(repeatHeldBlockPlacement,180);
 });
 
 // ---- チェスト（27スロット・スタック上限64・セーブ対応） ----
