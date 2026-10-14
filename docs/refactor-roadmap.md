@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `25e2ec0ec685d58e29685b5612bc018b080cdff2`（2026-10-14、今回feature作成時）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `19dcd447946d82b1ba2bacc59f11db4ffa1e6929`（2026-10-14、今回feature作成時）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -17,7 +17,7 @@
 | 5 | Mob・戦闘・投射物（05） | Mob判断・移動・スポーン・体力処理、近接ヒットと死亡ドロップ、矢の速度生成・移動・命中を分離済。Mob描画・クリーパー爆発・攻撃全般の統合検証は残存 | 一部完了（applyMeleeHit/dropDefeatedMob/calculateArrowVelocity 等） |
 | 6 | 移動・入力・ゲームループ（04-1, 08） | HUD・衝突・移動速度・速度ベクトル・フレーム時刻とFPS・空腹度・カメラ・水中表示を分離済。キー状態、フレーム全体の連携テストは残存 | 一部完了（advanceFrameClock/advanceHungerClock/updatePlayerCamera/updateUnderwaterVisuals 等） |
 | 7 | 所持品・クラフト・UI（04-0, 09） | 装備・所持品・ホットバー・2×2クラフトの画面生成とクラフト完成時の副作用を分離。所持品の状態更新・装備操作・DOM連携と保存の統合検証は残存 | 一部完了（renderInventoryEquipmentPanel/OwnedSlots/Hotbar/Crafting） |
-| 8 | リソースパック（10） | ファイル選択・ZIPエントリ走査・画像デコード呼出し・atlas描画を分離。実PNG/DEFLATE読込、ブラウザでの適用と復元は未検証 | 一部完了（collectPackHits/scanZipBlockEntries/decodePackImages/paintPackAtlas） |
+| 8 | リソースパック（10） | ファイル選択・ZIPエントリ走査・画像デコード呼出し・atlas描画を分離。実ZIPのSTORE/DEFLATEからPNGバイト列復元を検証。PNGデコード・ブラウザでの適用とアトラス復元は未検証 | 一部完了（collectPackHits/scanZipBlockEntries/decodePackImages/paintPackAtlas） |
 | 9 | テクスチャ・設定・起動（01, 02, 11） | 設定の読込・数値範囲/型の正規化を関数に抽出。ノイズ・生成画像・DOM反映・起動順は残存 | 一部完了（hydrateSettings） |
 
 ## 先行成果（本計画以前）
@@ -171,3 +171,10 @@
 - `tests/refactor-craft-state-completion.test.mjs`：実際の `putInCraft` / `find2x2Recipe` / `consumeCraftSlots` と画面イベントを組み合わせ、所持数減少のタイミング、二重消費なし、レシピ不一致、空きスロット不足、完成品付与を固定。
 - 変更前のテストコミット `23188fd` でCI成功（Run #38496900586）。実装コミット `c032613` でCI成功（Run #38496937526）。
 - 保存・復元を跨ぐクラフトスロットの更新、実DOMクリック連打、チェストとの受け渡し、装備の再描画は引き続き統合テスト対象。クラフト通知の演算子優先順位は意図的に変更していない。
+
+## 追加実施：リソースパックの実ZIP/DEFLATE検証（2026-10-14）
+
+- `feature/refactor-resource-pack-zip-inflate-20261014`：ZIPエントリのDEFLATE展開を `inflateZipBlockPayload(raw)` に抽出。既存のSTORE、未対応方式のスキップ、複数エントリの順序を変更せず、元の `DecompressionStream('deflate-raw')` を使用。
+- `tests/refactor-resource-pack-real-zip.test.mjs`：ZIPのローカルヘッダー・中央ディレクトリ・終端レコードを持つ実形式のZIPをNode.jsで生成。格納PNG、`zlib.deflateRawSync` で圧縮したPNG、無関係なパス、ファイル名の大小文字、重複、未対応方式、破損した圧縮ストリーム、終端レコード欠落を検証。PNG本体は1×1の実PNGデータで、展開バイト列の同一性を確認。
+- 変更前のテストコミット `8ce8112` でCI成功（Run #38497149698）。実装コミット `62c13c1` でCI成功（Run #38497207488）。
+- **未検証:** `createImageBitmap` による実PNG画像のデコード、ブラウザのDecompressionStream互換性、Canvasでのアトラス更新・復元、WebGLの視覚的一致、実ユーザーパック、古いセーブデータ。
