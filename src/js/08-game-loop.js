@@ -71,6 +71,3 @@ function loop(now){
  updateDayNight(dt); updateBlockGlows(dt); circuitTick(dt);mobTick(dt);arrowTick(dt);cloudTick(dt);dropTick(dt);stream();
  if(++fr%15==0)hud.textContent=formatHudText(crouching,swimDash,dashing,ix,iz);
  ren.render(scene,cam);requestAnimationFrame(loop)}
-requestAnimationFrame(loop);
-
-
