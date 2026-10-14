@@ -34,6 +34,6 @@ function applyCfg(){cam.fov=cfg.fov;cam.updateProjectionMatrix();sensMul=cfg.sen
   box.insertBefore(p,before);
   settingsBtn.addEventListener('click',e=>{e.stopPropagation();p.style.display='block';menuButtons.forEach(b=>b.style.display='none');p.scrollTop=0;});
  }}
+// Initialize settings before scheduling any game frame.
 applyCfg();
-// Settings and all prior classic scripts must exist before the first frame.
 requestAnimationFrame(loop);
