@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `9971ad930fb7ab2c360854ea0b47928c61308809`（2026-10-14、PR #27統合後）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `d448251a8528c90a1ce8722d0bbf95b2f64e6d37`（2026-10-14、本feature開始時）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -291,3 +291,11 @@
 - ブラウザ側の未統合Draft [#25](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/25) は、実WebGL2・操作・ZIP/PNG読込・セーブの検査を実行した一方、`cfg`未初期化の例外によりCI不合格。原因候補は [Issue #24](https://github.com/surumeneco/Minicraft-Ver.1.2-/issues/24) を参照。**ゲームループ継続・WebGLの視覚的同一性は未確認**。
 - `main`と提出済み`PR/01-structure-and-pages`・`PR/02-bugfixes-and-refactor`の保護対象SHAに変更なし。
 - 今後：Issue #24の因果関係を調査し、必要なら仕様変更と分離した修正PRでブラウザCIを合格させる。実セーブファイルを用いた互換検証、長押し/装備/チェスト/Mobの実機操作、実ワールド広域生成、回路・Block ID・描画全域、CAT-TDD正式ゲートは未完了として継続する。
+
+## 2026-10-14：Chromium常設CIと本番ノイズのスナップショット
+
+- [PR #29](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/29)：ゲームループ初回の`requestAnimationFrame(loop)`を`08-game-loop.js`末尾から`11-settings.js`の`applyCfg()`後へ移動し、ブラウザの`ReferenceError: cfg is not defined`を修正した。登録時機のみの不具合修正であり、ループ1フレーム中の更新順は不変。既存ポーズ回帰テストの初回スケジュール期待値も実際の移動先に対応。feature CI #38559817161成功、統合後CI #38560160208成功。
+- [PR #30](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/30)：Chromium/Playwright常設CI導入。WebGL2取得、ゲームループ継続、開始ガイド/インベントリ/ポーズ、JSONセーブと再読込、実DEFLATE ZIPからのPNGデコード、アトラス適用と保存復元の**Canvas画像バイト同一**・既定アトラス再描画、全JavaScript実行時例外なしを確認。feature CI #38560237258、統合後CI #38560420105成功。画像の見た目・ピクセル単位のWebGL画面比較は対象外。旧Draft #25は後継に置換・閉鎖、Issue #24は解決済み。
+- `feature/world-noise-save-snapshot-20261014`：`tests/refactor-real-world-noise-snapshots.test.mjs`を追加。旧`01-block-registry.js`の実`hs/vn/vn3`と実`03-world.js`で8チャンク生成（原点・負座標・遠隔座標）、全80層×16×16ボクセルのLEバイト列SHA-256・標高・ブロック数・水量・樹木関連ブロック数を固定。さらに編集済み3箇所を反映した別スナップショットを固定。樹種の数値IDだけはVMの再現用固定マップであり、実レジストリ全体や実保存ファイルの互換性検証ではない。
+- 変更前に実ノイズ出力値を取得したCI #38560851898成功、固定ゴールデン値を追加したCI #38560995253成功。続いて`biomeAt`から純粋な`classifyBiome(a,b,h)`を抽出、ノイズ取得→必要時の高さ取得→分類の順を変更せずに最終CI #38561076944成功。
+- **今後の優先事項**：既存ユーザー由来の旧保存実例の互換性、Mob/装備/チェスト/長押し/リロードのブラウザ統合、チャンク境界における描画ピクセル差分、レッドストーン回路の連動、CAT-TDDの正式実行記録。
