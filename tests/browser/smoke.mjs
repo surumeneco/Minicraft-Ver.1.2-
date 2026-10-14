@@ -57,7 +57,7 @@ try{
   '--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'
  ]});
  const page=await browser.newPage({viewport:{width:1280,height:800}});
- const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+ const errors=[];page.on('pageerror',e=>errors.push(e.stack||String(e)));
  const res=await page.goto('http://127.0.0.1:8000/',{waitUntil:'load',timeout:60000});
  assert.equal(res.status(),200);
  await page.waitForFunction(()=>typeof startGame==='function'&&document.getElementById('startBtn'),{timeout:60000});
@@ -69,6 +69,8 @@ try{
  assert.equal(gl.webgl2||gl.webgl,true,'WebGL context unavailable (do not treat as visual pass)');
  await page.locator('#startBtn').click();
  await page.waitForFunction(()=>document.getElementById('startGuide').style.display==='flex');
+ // Pointer lock sends mouse events to the canvas until released.
+ await page.evaluate(()=>{if(document.pointerLockElement)document.exitPointerLock()});
  await page.locator('#closeGuide').click();
  await page.waitForFunction(()=>document.getElementById('msg').style.display==='none');
  mkdirSync('artifacts',{recursive:true});
