@@ -79,9 +79,10 @@ function renderInventoryHotbar(){
 }
 
 function completeCraftingOutput(r){if(r){consumeCraftSlots(r[1]);give(r[0]);craftSlots=[null,null,null,null];toast(ITEMS[r[0]]?.name||NM[r[0]]+'を作成しました');renderInventory()}}
+function returnCraftIngredient(id,i){if(id){give(id,1);craftSlots[i]=null;renderInventory()}}
 function renderInventoryCrafting(){
   const ct=document.createElement('div');ct.className='invTitle';ct.textContent='2×2 クラフト';invBody.appendChild(ct);
-  const cg=document.createElement('div');cg.className='craft2';craftSlots.forEach((id,i)=>{const d=document.createElement('div');d.className='slot';d.innerHTML=id?invIcon(id):'';d.title=id?'クリックで取り出す':'空き';d.onclick=()=>{if(id){give(id,1);craftSlots[i]=null;renderInventory()}};cg.appendChild(d)});invBody.appendChild(cg);
+  const cg=document.createElement('div');cg.className='craft2';craftSlots.forEach((id,i)=>{const d=document.createElement('div');d.className='slot';d.innerHTML=id?invIcon(id):'';d.title=id?'クリックで取り出す':'空き';d.onclick=()=>returnCraftIngredient(id,i);cg.appendChild(d)});invBody.appendChild(cg);
   const out=document.createElement('div');out.className='craftOut';const result=document.createElement('div');result.className='slot';const r=find2x2Recipe();if(r)result.innerHTML=invIcon(r[0]);result.onclick=()=>completeCraftingOutput(r);out.appendChild(result);const tx=document.createElement('span');tx.textContent=r?'→ '+(ITEMS[r[0]]?.name||NM[r[0]]):'→ レシピなし';out.appendChild(tx);invBody.appendChild(out);
   // クラフト欄の下にはレシピ一覧を表示しない。材料を2×2に入れて完成品だけを作れる仕様。
 }
@@ -118,7 +119,9 @@ function putInCraft(id){const q=ITEMS[id];if(!q||!(invCount[id]>0))return;const 
 // インベントリのアイテムクリックは装備/使用を優先。空き2x2へ入れたい場合は右クリック。
 function renderPlayerInventoryOld(){return}
 const _equip=equip;equip=function(id){if(invPage==='inventory'&&ITEMS[id]&&ITEMS[id].type!=='food'&&ITEMS[id].type!=='weapon'&&ITEMS[id].type!=='armor'&&ITEMS[id].type!=='shield'&&craftSlots.length){putInCraft(id);return}return _equip(id)};
-const _toggleInv=toggleInv;toggleInv=function(){if(chestKey){closeChest();return}inv=!inv;invEl.style.display=inv?'flex':'none';if(inv){if(document.pointerLockElement)document.exitPointerLock();requestAnimationFrame(()=>{if(inv)renderInventory()})}else{try{cv.requestPointerLock()}catch(e){}}};
+const _toggleInv=toggleInv;
+function toggleInventoryView(){if(chestKey){closeChest();return}inv=!inv;invEl.style.display=inv?'flex':'none';if(inv){if(document.pointerLockElement)document.exitPointerLock();requestAnimationFrame(()=>{if(inv)renderInventory()})}else{try{cv.requestPointerLock()}catch(e){}}}
+toggleInv=toggleInventoryView;
 // Eで開閉。死亡時は必ず閉じる。
 const _respawn=respawn;respawn=function(){inv=false;invEl.style.display='none';chestKey=null;chestUI.style.display='none';_respawn()};
 
