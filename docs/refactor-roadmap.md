@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `5098e128e4a4a2ead9859f374aab921968d08036`（2026-10-14、本feature開始時）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `9971ad930fb7ab2c360854ea0b47928c61308809`（2026-10-14、PR #27統合後）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -277,3 +277,17 @@
 - `tests/refactor-tree-crown-parity.test.mjs`: 樹種oak/spruce/acacia/jungle/birch×原点・負座標・チャンク境界の計20条件で、旧実装固定参照と全ボクセル値・生成高さ・ノイズ参照順を比較。海岸・低高度・高度制限条件を追加検証。
 - 変更前テストコミット `16b2834`、CI Run #38508188733 成功。実装コミット `f11c8a4`、CI Run #38508243349 成功。
 - **未検証:** 本番ノイズ関数込みの固定seedでの大域分布、保存済みワールド全体での実データ比較、ブラウザWebGL表示とピクセル一致。これらは上記模擬環境の一致と区別する。
+
+## 2026-10-14 本バッチの最終確認（PR #27まで）
+
+| PR | 統合HEAD | 統合後CI |
+| --- | --- | --- |
+| [#22](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/22) 地形ボクセル値 | `5ddc3a3734a52225cf5f994df33aca27b725817e` | #38506879722 成功 |
+| [#23](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/23) TNT/FX tick | `f5721391252e880cd137d6a3222f6acd55478d76` | #38507196103 成功 |
+| [#26](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/26) 診断結果記録 | `5098e128e4a4a2ead9859f374aab921968d08036` | #38508057983 成功 |
+| [#27](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/27) 樹冠配置 | `9971ad930fb7ab2c360854ea0b47928c61308809` | #38508333632 成功 |
+
+- 最終確認時点ではNode.js回帰テスト **257件成功・0件失敗**。本バッチの新規テストは8件（#22:2 / #23:4 / #27:2）。本番コードの変更は上記3領域の責務抽出のみ。
+- ブラウザ側の未統合Draft [#25](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/25) は、実WebGL2・操作・ZIP/PNG読込・セーブの検査を実行した一方、`cfg`未初期化の例外によりCI不合格。原因候補は [Issue #24](https://github.com/surumeneco/Minicraft-Ver.1.2-/issues/24) を参照。**ゲームループ継続・WebGLの視覚的同一性は未確認**。
+- `main`と提出済み`PR/01-structure-and-pages`・`PR/02-bugfixes-and-refactor`の保護対象SHAに変更なし。
+- 今後：Issue #24の因果関係を調査し、必要なら仕様変更と分離した修正PRでブラウザCIを合格させる。実セーブファイルを用いた互換検証、長押し/装備/チェスト/Mobの実機操作、実ワールド広域生成、回路・Block ID・描画全域、CAT-TDD正式ゲートは未完了として継続する。
