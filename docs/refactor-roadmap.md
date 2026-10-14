@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `83aa47c839bfa7cbe22d3cd63e4da3ad55aa3ad3`（2026-10-14、今回feature作成時）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `25e2ec0ec685d58e29685b5612bc018b080cdff2`（2026-10-14、今回feature作成時）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -16,7 +16,7 @@
 | 4 | 回路・機構（06） | リピーター遅延、オブザーバー変化検知、ピストンアニメーション完了、TNTブロック走査・ダメージ、回路tick時間制御を分離。信号収集・導火線管理・回路全体の副作用整理は残存 | 一部完了（updateRepeaterState/updateObserverState/finishPistonAnimation/collectBlastBlockChanges/damageBlastEntities/advanceCircuitClock 等） |
 | 5 | Mob・戦闘・投射物（05） | Mob判断・移動・スポーン・体力処理、近接ヒットと死亡ドロップ、矢の速度生成・移動・命中を分離済。Mob描画・クリーパー爆発・攻撃全般の統合検証は残存 | 一部完了（applyMeleeHit/dropDefeatedMob/calculateArrowVelocity 等） |
 | 6 | 移動・入力・ゲームループ（04-1, 08） | HUD・衝突・移動速度・速度ベクトル・フレーム時刻とFPS・空腹度・カメラ・水中表示を分離済。キー状態、フレーム全体の連携テストは残存 | 一部完了（advanceFrameClock/advanceHungerClock/updatePlayerCamera/updateUnderwaterVisuals 等） |
-| 7 | 所持品・クラフト・UI（04-0, 09） | 装備・所持品・ホットバー・2×2クラフトの画面生成を分離。所持品の状態更新・装備操作・クラフト検証と描画の依存整理は残存 | 一部完了（renderInventoryEquipmentPanel/OwnedSlots/Hotbar/Crafting） |
+| 7 | 所持品・クラフト・UI（04-0, 09） | 装備・所持品・ホットバー・2×2クラフトの画面生成とクラフト完成時の副作用を分離。所持品の状態更新・装備操作・DOM連携と保存の統合検証は残存 | 一部完了（renderInventoryEquipmentPanel/OwnedSlots/Hotbar/Crafting） |
 | 8 | リソースパック（10） | ファイル選択・ZIPエントリ走査・画像デコード呼出し・atlas描画を分離。実PNG/DEFLATE読込、ブラウザでの適用と復元は未検証 | 一部完了（collectPackHits/scanZipBlockEntries/decodePackImages/paintPackAtlas） |
 | 9 | テクスチャ・設定・起動（01, 02, 11） | 設定の読込・数値範囲/型の正規化を関数に抽出。ノイズ・生成画像・DOM反映・起動順は残存 | 一部完了（hydrateSettings） |
 
@@ -164,3 +164,10 @@
 - `tests/refactor-input-mouse-release.test.mjs`：実イベント登録の回帰テストで、全フラグの解除、タイマー値0への変更、副作用順、非押下時やポーズ中でもmouseupを処理する既存挙動を固定。
 - 変更前テストのみのコミット `65305de` でCI成功（Run #38496664184）。実装コミット `a6e06a9` でCI成功（Run #38496697794）。
 - Escapeポーズ時とmouseup時ではタイマー値を0へ戻すかどうかが異なるため、両処理を統一していない。マウス押下の再発行/繰り返し条件は未分離・未検証。
+
+## 追加実施：クラフト完成時の状態遷移（2026-10-14）
+
+- `feature/refactor-inventory-craft-completion-20261014`：`09-inventory.js` の2×2クラフト完成ボタンから `completeCraftingOutput(r)` を抽出。レシピ参照、素材スロット消去、完成品付与、通知テキスト、再描画の順序を維持した。
+- `tests/refactor-craft-state-completion.test.mjs`：実際の `putInCraft` / `find2x2Recipe` / `consumeCraftSlots` と画面イベントを組み合わせ、所持数減少のタイミング、二重消費なし、レシピ不一致、空きスロット不足、完成品付与を固定。
+- 変更前のテストコミット `23188fd` でCI成功（Run #38496900586）。実装コミット `c032613` でCI成功（Run #38496937526）。
+- 保存・復元を跨ぐクラフトスロットの更新、実DOMクリック連打、チェストとの受け渡し、装備の再描画は引き続き統合テスト対象。クラフト通知の演算子優先順位は意図的に変更していない。
