@@ -114,7 +114,52 @@ try{
  assert.deepEqual(restored.p,beforeSave.p);
  assert.deepEqual(restored.craftSlots,beforeSave.craftSlots);
  assert.deepEqual(errors,[],'unexpected browser runtime exceptions');
- console.log('Chromium: WebGL, UI, save/reload, real DEFLATE PNG atlas apply/reset passed');
+
+ // Exercise an older save shape in a fresh Chromium storage context, without
+ // inventing a user-provided save file or changing the production schema.
+ const legacyContext=await browser.newContext({viewport:{width:1280,height:800}});
+ const oldSave={
+  e:{'524800':[8977,7]},p:[18,42,19,0,0],
+  hot:[24,25,3,4,5,6,7,8,9],sel:3,
+  invCount:{101:5},equipped:{helmet:null},
+  ch:{'1,35,1':[[101,2],null]}
+ };
+ await legacyContext.addInitScript(snapshot=>{
+  if(!localStorage.getItem('minicraft_v2'))
+   localStorage.setItem('minicraft_v2',JSON.stringify(snapshot));
+ },oldSave);
+ const legacy=await legacyContext.newPage();
+ const legacyErrors=[];legacy.on('pageerror',e=>legacyErrors.push(e.stack||String(e)));
+ await legacy.goto('http://127.0.0.1:8000/',{waitUntil:'load',timeout:60000});
+ await legacy.waitForFunction(()=>eval('loaded')===true,{timeout:20000});
+ const restoredLegacy=await legacy.evaluate(()=>({
+  coords:[eval('P').x,eval('P').z],
+  hot:Array.from(eval('hot')),
+  inv:eval('invCount')[101],
+  chest:eval('chests')['1,35,1'][0],
+  edit:Array.from(eval('edits').get(524800)||[]),
+  hp:eval('hp'),hunger:eval('hunger'),worldClock:eval('worldClock'),
+  slots:Array.from(eval('craftSlots'))
+ }));
+ assert.deepEqual(restoredLegacy.coords,[18,19]);
+ assert.deepEqual(restoredLegacy.hot.slice(0,4),[1,1,3,4]);
+ assert.equal(restoredLegacy.inv,5);
+ assert.deepEqual(restoredLegacy.chest,[101,2]);
+ assert.deepEqual(restoredLegacy.edit,[[8977,7]]);
+ assert.deepEqual([restoredLegacy.hp,restoredLegacy.hunger,restoredLegacy.worldClock],[20,10,0]);
+ assert.deepEqual(restoredLegacy.slots,[null,null,null,null]);
+ await legacy.evaluate(()=>save(false));
+ const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
+ assert.equal(normalized.invCount[101],5);
+ assert.deepEqual(normalized.ch['1,35,1'][0],[101,2]);
+ assert.deepEqual(normalized.e['524800'],[8977,7]);
+ assert.deepEqual(normalized.craftSlots,[null,null,null,null]);
+ await legacy.reload({waitUntil:'load',timeout:60000});
+ await legacy.waitForFunction(()=>eval('loaded')===true,{timeout:20000});
+ assert.equal(await legacy.evaluate(()=>eval('invCount')[101]),5);
+ assert.deepEqual(legacyErrors,[],'legacy browser save emitted JavaScript errors');
+ await legacyContext.close();
+ console.log('Chromium: WebGL, UI, saves, ZIP/PNG atlas, and synthetic legacy-schema hydration passed');
 }finally{
  if(browser)await browser.close();
  webServer.kill();
