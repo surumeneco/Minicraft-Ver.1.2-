@@ -1,0 +1,31 @@
+name: Chromium browser smoke
+
+on:
+  push:
+    branches: [develop, 'feature/browser-regression-e2e-20261014']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Playwright test dependency
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Install Chromium and headless runtime dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Run real browser smoke
+        run: node tests/browser/smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minicraft-chromium-screenshot
+          path: artifacts/minicraft-browser-smoke.png
+          if-no-files-found: ignore
