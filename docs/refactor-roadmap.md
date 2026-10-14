@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `7ce525462e235b4445f50e614f65793b423fafc1`（2026-10-14、今回feature作成時）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `c5a892d917a4661da315460f08b8cfed8e5a7d4f`（2026-10-14、今回feature作成時）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -199,3 +199,10 @@
 - `tests/refactor-inventory-state-actions.test.mjs`：開く/閉じる/チェスト優先/ロック例外/遅延描画キャンセル/素材返却/空スロットを6件で検証。
 - テストのみ `bc3c252` のCI成功（Run #38501596468）。実装 `1f8d7fb` のCI成功（Run #38501643331）。
 - **未検証:** 実DOMのクリック連打、チェスト・クラフト・装備・保存の複合状態遷移、ポインタロックの実ブラウザ挙動。古いDOMへの連打も含め動作を修正していない。
+
+## 追加実施：保存済みリソースパックの起動時復元（2026-10-14）
+
+- `feature/refactor-resource-pack-saved-atlas-20261014`：起動時に`PK`から設定を読み、`N`一致時に`Image.onload`でCanvasと`refreshAtlas()`を更新する処理を `restoreSavedPackAtlas()` に抽出。画像ロード非同期、例外処理、保存キーと再描画順を変更していない。
+- `tests/refactor-resource-pack-saved-atlas.test.mjs`：保存画像の復元要求とload callbackの順序、アトラス寸法とimageSmoothing、保存形式不一致、欠損/不正JSON、ストレージ例外、未ロード時の既定画像維持を4件で固定。
+- テストのみ `9102318`：CI成功（Run #38501818761）。製品コード抽出 `87db19c`：CI失敗（Run #38501860860）。既存アトラスresetテストのソース範囲抽出が新しい関数宣言の途中で切れてSyntaxErrorになったことが原因で、`tests/refactor-resource-pack-atlas-reset.test.mjs` の抽出終端を新しい関数境界に対応（`404fca3`）。修正後CI成功（Run #38501928865）。既存の副作用検証項目は削減していない。
+- **未検証:** 実ブラウザでのImageデコード、Canvas視覚的一致、保存済みテクスチャ画像の起動後適用、各種PNGエラーイベント、WebGLのテクスチャ転送と描画。
