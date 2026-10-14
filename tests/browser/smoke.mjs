@@ -93,6 +93,15 @@ try{
  await page.waitForFunction(()=>!!localStorage.getItem('minicraft_pack'),{timeout:30000});
  const applied=await page.evaluate(()=>eval('ac.toDataURL("image/png")'));
  assert.notEqual(applied,original,'real ZIP/PNG did not update atlas pixels');
+ // Ensure a saved real PNG atlas is rehydrated after a full browser reload.
+ await page.reload({waitUntil:'load',timeout:60000});
+ await page.waitForFunction(expected=>eval('ac.toDataURL("image/png")')===expected,applied,{timeout:20000});
+ await page.waitForFunction(()=>eval('fr')>=3,{timeout:20000});
+ await page.locator('#startBtn').click();
+ await page.waitForFunction(()=>document.getElementById('startGuide').style.display==='flex');
+ await page.evaluate(()=>{if(document.pointerLockElement)document.exitPointerLock()});
+ await page.locator('#closeGuide').click();
+ await page.waitForFunction(()=>document.getElementById('msg').style.display==='none');
  await page.keyboard.press('Escape');
  await page.waitForFunction(()=>document.getElementById('pauseMenu').style.display==='flex');
  await page.locator('#pauseMenu button').filter({hasText:'標準テクスチャに戻す'}).click();
