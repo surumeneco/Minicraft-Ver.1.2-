@@ -157,11 +157,14 @@ function scanZipBlockEntries(buf){
  }
  return entries;
 }
+async function inflateZipBlockPayload(raw){
+ return new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+}
 async function readZip(buf){
  const out=new Map();
  for(const {name,method,raw} of scanZipBlockEntries(buf)){
   let data=raw;
-  if(method===8)data=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  if(method===8)data=await inflateZipBlockPayload(raw);
   else if(method!==0)continue;
   out.set(name,data);
  }
