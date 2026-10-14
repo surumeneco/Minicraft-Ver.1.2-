@@ -8,6 +8,7 @@ test('items placed in 2x2 crafting slots persist across a reload (#5)', () => {
  const inv=readFileSync('src/js/09-inventory.js','utf8');
  const funcs=src.slice(src.indexOf('function save(man){'),src.indexOf('// ワールド読込は'));
  const decl=inv.split('\n').find(line=>line.includes("let invPage='all'"));
+ const hydrationHelper=inv.split('\n').find(line=>line.startsWith('function hydrateCraftSlots('));
  assert.ok(decl);
  const store=new Map();
  const sandbox={localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},
@@ -23,6 +24,7 @@ test('items placed in 2x2 crafting slots persist across a reload (#5)', () => {
  assert.deepEqual(JSON.parse(store.get(sandbox.SK)).craftSlots,[1001,null,1001,null]);
  vm.runInContext("craftSlots=[null,null,null,null]; pendingCraftSlots=null;",sandbox);
  assert.equal(sandbox.load(),true);
+ if(hydrationHelper)vm.runInContext(hydrationHelper,sandbox);
  vm.runInContext(decl.replace("let invPage=","invPage="),sandbox);
  const restored=vm.runInContext("Array.from(craftSlots)",sandbox);
  assert.deepEqual(JSON.parse(JSON.stringify(restored)),[1001,null,1001,null]);
