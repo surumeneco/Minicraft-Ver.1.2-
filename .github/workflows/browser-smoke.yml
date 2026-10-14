@@ -2,7 +2,9 @@ name: Chromium browser smoke
 
 on:
   push:
-    branches: [develop, 'feature/browser-regression-e2e-20261014']
+    branches: [develop]
+  pull_request:
+    branches: [develop]
   workflow_dispatch:
 
 permissions:
