@@ -34,7 +34,7 @@ function fixture({floor=false,primed=[],fxs=[]}={}){
   }
  };
  vm.createContext(ctx);vm.runInContext(src.slice(start,end),ctx);
- return {ctx,objects,visuals,white,red,band,events,run:dt=>ctx.primedTick(dt)};
+ return {ctx,objects:objects.slice(),visuals,white,red,band,events,run:dt=>ctx.primedTick(dt)};
 }
 
 test('active TNT advances fuse, material flash and gravity before updating position',()=>{
@@ -62,7 +62,7 @@ test('falling TNT collides at floor and explodes after moving its visual mesh',(
  assert.deepEqual(f.events.find(e=>e[0]==='blast'),['blast',.5,2.5,.5]);
  assert.equal(f.visuals.length,1);
  assert.equal(f.visuals[0].t,.2);
- assert.equal(f.visuals[0].g.material.opacity,.32);
+ assert.ok(Math.abs(f.visuals[0].g.material.opacity-.32)<1e-12);
 });
 
 test('preexisting blast flashes are scaled, faded, removed when over .35 seconds',()=>{
