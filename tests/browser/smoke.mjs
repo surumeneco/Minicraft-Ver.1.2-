@@ -147,7 +147,8 @@ try{
  assert.equal(restoredLegacy.inv,5);
  assert.deepEqual(restoredLegacy.chest,[101,2]);
  assert.deepEqual(restoredLegacy.edit,[[8977,7]]);
- assert.deepEqual([restoredLegacy.hp,restoredLegacy.hunger,restoredLegacy.worldClock],[20,10,0]);
+ assert.deepEqual([restoredLegacy.hp,restoredLegacy.hunger],[20,10]);
+ assert.ok(restoredLegacy.worldClock>=0&&restoredLegacy.worldClock<1,'default world clock may advance with live frames');
  assert.deepEqual(restoredLegacy.slots,[null,null,null,null]);
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
