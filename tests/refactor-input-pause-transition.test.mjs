@@ -59,7 +59,7 @@ function fixture(){
 
 test('Escape closes inventory and chest, saves before pausing, releases held inputs and pointer lock',()=>{
  const f=fixture();
- f.state('gameStarted=true;keys.KeyW=1;');
+ f.state('gameStarted=true;keys.KeyW=1;drag=true;');
  f.key('Escape');
  assert.equal(f.ctx.inv,false);
  assert.equal(f.ctx.invEl.style.display,'none');
@@ -72,7 +72,7 @@ test('Escape closes inventory and chest, saves before pausing, releases held inp
  assert.equal(f.ctx.foodRightHeld,false);
  assert.equal(f.ctx.leftBreakHeld,false);
  assert.equal(f.ctx.rightPlaceHeld,false);
- assert.equal(f.ctx.drag,false);
+ assert.equal(f.state('drag'),false);
  assert.deepEqual(f.calls,[
   ['preventDefault'],['save',false,false],
   ['clearTimeout',17],['clearInterval',23],['clearInterval',29],
