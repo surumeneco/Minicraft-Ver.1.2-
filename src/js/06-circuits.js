@@ -155,8 +155,7 @@ function updateObserverState(c,x,y,z,s){
  if(c.last===undefined)c.last=cur;
  else if(cur!==c.last){c.last=cur;c.pulse=2}
 }
-function rsTick(){const list=[];
- RS.forEach((c,k)=>{if(Math.abs(c.x-P.x)>56||Math.abs(c.z-P.z)>56)return;const v=getB(c.x,c.y,c.z);if(!RSB.has(v&255)){RS.delete(k);return}c.v=v;c.bs=v&255;c.s=v>>8;list.push(c)});
+function collectCircuitSignalSources(list){
  EM=new Map();const E=(x,y,z,l)=>{const k=rk(x,y,z);if((EM.get(k)||0)<l)EM.set(k,l)},adj=(c,l)=>{for(const[dx,dy,dz]of D6)E(c.x+dx,c.y+dy,c.z+dz,l)};
  for(const c of list){const bs=c.bs,s=c.s;
   if((bs===STONE_BUTTON||bs===TARGET)&&c.tm>0)c.tm--;if(bs===OBSERVER&&c.pulse>0)c.pulse--;if(bs===PRESSURE)c.on=standing(c.x,c.y,c.z);
@@ -164,6 +163,11 @@ function rsTick(){const list=[];
    case OBSERVER:if(c.pulse>0){const f=s&3;E(c.x-D4[f][0],c.y,c.z-D4[f][2],15)}break;
    case REPEATER:if(s&16){const f=s&3;E(c.x+D4[f][0],c.y,c.z+D4[f][2],15)}break;
    case COMPARATOR:if(c.out>0){const f=s&3;E(c.x+D4[f][0],c.y,c.z+D4[f][2],c.out)}break}}
+
+}
+function rsTick(){const list=[];
+ RS.forEach((c,k)=>{if(Math.abs(c.x-P.x)>56||Math.abs(c.z-P.z)>56)return;const v=getB(c.x,c.y,c.z);if(!RSB.has(v&255)){RS.delete(k);return}c.v=v;c.bs=v&255;c.s=v>>8;list.push(c)});
+ collectCircuitSignalSources(list);
  const dust=list.filter(c=>c.bs===RED_DUST),nd=new Map();for(const c of dust)nd.set(rk(c.x,c.y,c.z),EM.get(rk(c.x,c.y,c.z))||0);
  spreadDustLevels(dust,nd);
  DL=nd;const ch=[];
