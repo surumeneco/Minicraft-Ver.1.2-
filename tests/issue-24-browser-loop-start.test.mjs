@@ -6,15 +6,16 @@ const loop=readFileSync('src/js/08-game-loop.js','utf8');
 const settings=readFileSync('src/js/11-settings.js','utf8');
 const html=readFileSync('index.html','utf8');
 
-test('the initial game animation frame is not scheduled before settings initialize',()=>{
-  assert.match(loop,/ren\\.render\\(scene,cam\\);requestAnimationFrame\\(loop\\)\\}/,'per-frame scheduling remains in the loop');
-  assert.doesNotMatch(loop,/\\nrequestAnimationFrame\\(loop\\);\\s*$/,'no early start in game loop script');
-  assert.match(settings,/applyCfg\\(\\);\\s*requestAnimationFrame\\(loop\\);\\s*$/,'start only after configuration hydration');
-  assert.equal((loop+settings).match(/^requestAnimationFrame\\(loop\\);$/gm)?.length,1,'exactly one initial frame');
+test('the initial game animation frame is scheduled only after settings initialize',()=>{
+  assert.ok(loop.includes('ren.render(scene,cam);requestAnimationFrame(loop)}'),'per-frame scheduling remains');
+  assert.notEqual(loop.trimEnd().split('\n').at(-1),'requestAnimationFrame(loop);','no early frame start');
+  assert.ok(settings.trimEnd().endsWith('applyCfg();\nrequestAnimationFrame(loop);'),'start after settings');
+  assert.equal((loop+'\n'+settings).split('\n').filter(x=>x==='requestAnimationFrame(loop);').length,1,'one initial frame');
 });
 
-test('the final settings section still follows the game loop in classic-script load order',()=>{
-  const scripts=[...html.matchAll(/<script src=\"\\.\\/(src\\/js\\/[^\"]+)\"/g)].map(x=>x[1]);
-  assert.ok(scripts.indexOf('src/js/08-game-loop.js')<scripts.indexOf('src/js/11-settings.js'));
-  assert.equal(scripts.at(-1),'src/js/11-settings.js');
+test('the final settings section follows the game loop in classic-script load order',()=>{
+  const loopPos=html.indexOf('./src/js/08-game-loop.js');
+  const settingsPos=html.indexOf('./src/js/11-settings.js');
+  assert.ok(loopPos>=0&&settingsPos>loopPos);
+  assert.ok(html.includes('<script src="./src/js/11-settings.js"></script></body></html>'));
 });
