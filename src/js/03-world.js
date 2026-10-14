@@ -35,18 +35,22 @@ let blockLightCache=new Map(),blockLightDirty=true,lightSystemReady=false;const 
 function fillTerrainColumn(d,lx,lz,X0,Z0){
  const x=X0+lx,z=Z0+lz,h=hAt(x,z),sd=h<=SL+1,m=Math.max(h,SL),bio=biomeAt(x,z,h);
  for(let y=0;y<=m;y++){
-  let surface=sd?6:1,fill=sd?16:2;
-  if(!sd){
-   if(bio===BI.COAST){surface=6;fill=16}
-   else if(bio===BI.SNOW){surface=BID.snow;fill=2}
-  }
-  let b=y>h?WA:y==h?surface:y>h-4?fill:ore(x,y,z);
-  if(y>4&&y<h&&cave(x,y,z))b=y<=11?LA:0;
-  d[lx+16*(lz+16*y)]=b;
+  d[lx+16*(lz+16*y)]=terrainBlockValue(x,y,z,h,sd,bio);
  }
  d[lx+16*lz]=10;
  for(let y=1;y<5;y++)if(hs(x*3.1+y,z*2.7+y*5)<.8-y*.2)d[lx+16*(lz+16*y)]=10;
  return m+1;
+}
+// Preserve the original biome, ore and cave sampling order for each voxel.
+function terrainBlockValue(x,y,z,h,sd,bio){
+ let surface=sd?6:1,fill=sd?16:2;
+ if(!sd){
+  if(bio===BI.COAST){surface=6;fill=16}
+  else if(bio===BI.SNOW){surface=BID.snow;fill=2}
+ }
+ let b=y>h?WA:y==h?surface:y>h-4?fill:ore(x,y,z);
+ if(y>4&&y<h&&cave(x,y,z))b=y<=11?LA:0;
+ return b;
 }
 function replayChunkEdits(d,top,key){
  const e=edits.get(key);
