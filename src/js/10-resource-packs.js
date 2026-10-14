@@ -204,7 +204,8 @@ async function packFiles(files){toast('テクスチャパックを読み込み�
  const c=await applyPack(map);toast(c?c+'種類のテクスチャを適用しました':'対応するブロックテクスチャが見つかりません（assets/minecraft/textures/block/ のPNGが必要です）')}
 function restoreDefaultPackAtlas(){ac.width=16*CO;ac.height=16*RW;ac.getContext('2d').putImageData(im,0,0);refreshAtlas()}
 function resetPack(){try{localStorage.removeItem(PK)}catch(e){}restoreDefaultPackAtlas();toast('標準テクスチャに戻しました')}
-try{const sp=JSON.parse(localStorage.getItem(PK)||'null');if(sp&&sp.n===N){const i2=new Image();i2.onload=()=>{ac.width=i2.width;ac.height=i2.height;const g=ac.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(i2,0,0);refreshAtlas()};i2.src=sp.d}}catch(e){}
+function restoreSavedPackAtlas(){try{const sp=JSON.parse(localStorage.getItem(PK)||'null');if(sp&&sp.n===N){const i2=new Image();i2.onload=()=>{ac.width=i2.width;ac.height=i2.height;const g=ac.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(i2,0,0);refreshAtlas()};i2.src=sp.d}}catch(e){}}
+restoreSavedPackAtlas();
 {const fi=Object.assign(document.createElement('input'),{type:'file',accept:'.zip,.png,image/png,application/zip',multiple:true});fi.style.display='none';document.body.appendChild(fi);
  fi.onchange=()=>{if(fi.files.length)packFiles([...fi.files]);fi.value=''};
  const mk=(t,fn,st)=>{const b=document.createElement('button');b.type='button';b.textContent=t;if(st)b.style.cssText=st;b.onclick=e=>{e.stopPropagation();fn()};return b};

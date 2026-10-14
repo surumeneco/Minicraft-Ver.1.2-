@@ -7,7 +7,8 @@ const source=readFileSync('src/js/10-resource-packs.js','utf8');
 const resetAt=source.indexOf('function resetPack(){');
 const extractedAt=source.indexOf('function restoreDefaultPackAtlas(');
 const begin=extractedAt>=0?extractedAt:resetAt;
-const end=source.indexOf('try{const sp=JSON.parse(',resetAt);
+const savedRestore=source.indexOf('function restoreSavedPackAtlas(',resetAt);
+const end=savedRestore>=0?savedRestore:source.indexOf('try{const sp=JSON.parse(',resetAt);
 assert.ok(resetAt>=0&&end>begin,'reset pack section');
 const code=source.slice(begin,end);
 
