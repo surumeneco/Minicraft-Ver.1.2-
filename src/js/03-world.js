@@ -14,8 +14,12 @@ const BID={
 };
 function biomeAt(x,z,h){
  const a=vn(x/150,z/150), b=vn(x/55+31,z/55+17);
- // 5種類だけ。海面付近を海岸、それ以外を大きめの自然な領域にする。
  if(h===undefined)h=hAt(x,z);
+ return classifyBiome(a,b,h);
+}
+// The climate classifier does not change the order of noise or height sampling.
+function classifyBiome(a,b,h){
+ // 5種類だけ。海面付近を海岸、それ以外を大きめの自然な領域にする。
  if(h<=SL+2)return BI.COAST;
  if(a<.20)return BI.SAVANNA;
  if(a>.82)return BI.SNOW;
