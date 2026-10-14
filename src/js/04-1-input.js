@@ -68,7 +68,8 @@ addEventListener('mousedown',e=>{
   else if(sh==9||sh==10){if((tv&255)==base&&((tv>>8)==9&&dyn>0||(tv>>8)==10&&dyn<0)){setB(x,y,z,base);return}id=base|((9+half)<<8)}
   else if(sh>=13)id=base|((13+pf+8*half)<<8);
   if(solid(id)&&!NC[id&255]&&a<P.x+R&&a+1>P.x-R&&b<P.y+HT&&b+1>P.y&&c<P.z+R&&c+1>P.z-R)return;setB(a,b,c,id);if(id===SPG)spongeAbsorb(a,b,c)}});
-addEventListener('mouseup',()=>{foodRightHeld=false;clearTimeout(foodEatTimer);foodEatTimer=0;drag=false;rightPlaceHeld=false;clearInterval(rightPlaceTimer);rightPlaceTimer=0;leftBreakHeld=false;clearInterval(leftBreakTimer);leftBreakTimer=0});
+function releaseMouseInput(){foodRightHeld=false;clearTimeout(foodEatTimer);foodEatTimer=0;drag=false;rightPlaceHeld=false;clearInterval(rightPlaceTimer);rightPlaceTimer=0;leftBreakHeld=false;clearInterval(leftBreakTimer);leftBreakTimer=0}
+addEventListener('mouseup',releaseMouseInput);
 // 左ボタン長押し中は、狙っているブロックの破壊操作を一定間隔で繰り返す
 let leftBreakHeld=false,leftBreakTimer=0;
 addEventListener('mousedown',e=>{
