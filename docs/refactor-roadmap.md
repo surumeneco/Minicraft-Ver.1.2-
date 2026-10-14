@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `c5a892d917a4661da315460f08b8cfed8e5a7d4f`（2026-10-14、今回feature作成時）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `d620bafe0d301bad5213ca57351f873e8ee3677f`（2026-10-14、今回feature作成時）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -206,3 +206,10 @@
 - `tests/refactor-resource-pack-saved-atlas.test.mjs`：保存画像の復元要求とload callbackの順序、アトラス寸法とimageSmoothing、保存形式不一致、欠損/不正JSON、ストレージ例外、未ロード時の既定画像維持を4件で固定。
 - テストのみ `9102318`：CI成功（Run #38501818761）。製品コード抽出 `87db19c`：CI失敗（Run #38501860860）。既存アトラスresetテストのソース範囲抽出が新しい関数宣言の途中で切れてSyntaxErrorになったことが原因で、`tests/refactor-resource-pack-atlas-reset.test.mjs` の抽出終端を新しい関数境界に対応（`404fca3`）。修正後CI成功（Run #38501928865）。既存の副作用検証項目は削減していない。
 - **未検証:** 実ブラウザでのImageデコード、Canvas視覚的一致、保存済みテクスチャ画像の起動後適用、各種PNGエラーイベント、WebGLのテクスチャ転送と描画。
+
+## 追加実施：保存データからクラフト欄への初期化（2026-10-14）
+
+- `feature/refactor-craft-slot-hydration-20261014`：`09-inventory.js` の `pendingCraftSlots` に基づくインベントリ起動時の2×2クラフト欄初期化を `hydrateCraftSlots(saved)` に抽出。4スロット、整数かつ正値のみ採用、欠損・不正値はnullへ正規化する既存規則を維持。
+- `tests/refactor-craft-slot-hydration.test.mjs`：`04-0-player-ui.js` の `restoreSurvivalState()` と `09-inventory.js` の実初期化を連結し、保存済み配列の内容・切り詰め・補完・数値検証・生存状態の復元を5件で固定。
+- テストのみ `d9261f2` のCI成功（Run #38502124816）。実装 `2b3610d` のCIは失敗（Run #38502165235）：既存 `tests/issue-5-crafting.test.mjs` が初期化1行だけを取り出し新しい依存関数を読み込まずReferenceErrorに。検証アサーションを変えず、依存関数もVMへ読み込むよう修正（`ff0b176`）。修正後CI成功（Run #38502233863）。
+- 保存形式は変更しない。引き続き、実ブラウザでのロード直後のインベントリ描画、チェストや装備との同時操作、画面操作とセーブの統合E2Eは未検証。
