@@ -78,10 +78,11 @@ function renderInventoryHotbar(){
   invBody.appendChild(hb);
 }
 
+function completeCraftingOutput(r){if(r){consumeCraftSlots(r[1]);give(r[0]);craftSlots=[null,null,null,null];toast(ITEMS[r[0]]?.name||NM[r[0]]+'を作成しました');renderInventory()}}
 function renderInventoryCrafting(){
   const ct=document.createElement('div');ct.className='invTitle';ct.textContent='2×2 クラフト';invBody.appendChild(ct);
   const cg=document.createElement('div');cg.className='craft2';craftSlots.forEach((id,i)=>{const d=document.createElement('div');d.className='slot';d.innerHTML=id?invIcon(id):'';d.title=id?'クリックで取り出す':'空き';d.onclick=()=>{if(id){give(id,1);craftSlots[i]=null;renderInventory()}};cg.appendChild(d)});invBody.appendChild(cg);
-  const out=document.createElement('div');out.className='craftOut';const result=document.createElement('div');result.className='slot';const r=find2x2Recipe();if(r)result.innerHTML=invIcon(r[0]);result.onclick=()=>{if(r){consumeCraftSlots(r[1]);give(r[0]);craftSlots=[null,null,null,null];toast(ITEMS[r[0]]?.name||NM[r[0]]+'を作成しました');renderInventory()}};out.appendChild(result);const tx=document.createElement('span');tx.textContent=r?'→ '+(ITEMS[r[0]]?.name||NM[r[0]]):'→ レシピなし';out.appendChild(tx);invBody.appendChild(out);
+  const out=document.createElement('div');out.className='craftOut';const result=document.createElement('div');result.className='slot';const r=find2x2Recipe();if(r)result.innerHTML=invIcon(r[0]);result.onclick=()=>completeCraftingOutput(r);out.appendChild(result);const tx=document.createElement('span');tx.textContent=r?'→ '+(ITEMS[r[0]]?.name||NM[r[0]]):'→ レシピなし';out.appendChild(tx);invBody.appendChild(out);
   // クラフト欄の下にはレシピ一覧を表示しない。材料を2×2に入れて完成品だけを作れる仕様。
 }
 function renderPlayerInventory(){
