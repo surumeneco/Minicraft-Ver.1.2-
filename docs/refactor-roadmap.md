@@ -1,6 +1,6 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `19dcd447946d82b1ba2bacc59f11db4ffa1e6929`（2026-10-14、今回feature作成時）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `8f3073e0caa722eca2af2f8105c2f246cf143fc3`（2026-10-14、今回feature作成時）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
@@ -17,7 +17,7 @@
 | 5 | Mob・戦闘・投射物（05） | Mob判断・移動・スポーン・体力処理、近接ヒットと死亡ドロップ、矢の速度生成・移動・命中を分離済。Mob描画・クリーパー爆発・攻撃全般の統合検証は残存 | 一部完了（applyMeleeHit/dropDefeatedMob/calculateArrowVelocity 等） |
 | 6 | 移動・入力・ゲームループ（04-1, 08） | HUD・衝突・移動速度・速度ベクトル・フレーム時刻とFPS・空腹度・カメラ・水中表示を分離済。キー状態、フレーム全体の連携テストは残存 | 一部完了（advanceFrameClock/advanceHungerClock/updatePlayerCamera/updateUnderwaterVisuals 等） |
 | 7 | 所持品・クラフト・UI（04-0, 09） | 装備・所持品・ホットバー・2×2クラフトの画面生成とクラフト完成時の副作用を分離。所持品の状態更新・装備操作・DOM連携と保存の統合検証は残存 | 一部完了（renderInventoryEquipmentPanel/OwnedSlots/Hotbar/Crafting） |
-| 8 | リソースパック（10） | ファイル選択・ZIPエントリ走査・画像デコード呼出し・atlas描画を分離。実ZIPのSTORE/DEFLATEからPNGバイト列復元を検証。PNGデコード・ブラウザでの適用とアトラス復元は未検証 | 一部完了（collectPackHits/scanZipBlockEntries/decodePackImages/paintPackAtlas） |
+| 8 | リソースパック（10） | ファイル選択・ZIPエントリ走査・画像デコード呼出し・atlas描画を分離。実ZIPのSTORE/DEFLATEからPNGバイト列復元、標準アトラス復元の副作用順をモックで検証。PNGデコード・実ブラウザでの適用/復元は未検証 | 一部完了（collectPackHits/scanZipBlockEntries/decodePackImages/paintPackAtlas） |
 | 9 | テクスチャ・設定・起動（01, 02, 11） | 設定の読込・数値範囲/型の正規化を関数に抽出。ノイズ・生成画像・DOM反映・起動順は残存 | 一部完了（hydrateSettings） |
 
 ## 先行成果（本計画以前）
@@ -178,3 +178,10 @@
 - `tests/refactor-resource-pack-real-zip.test.mjs`：ZIPのローカルヘッダー・中央ディレクトリ・終端レコードを持つ実形式のZIPをNode.jsで生成。格納PNG、`zlib.deflateRawSync` で圧縮したPNG、無関係なパス、ファイル名の大小文字、重複、未対応方式、破損した圧縮ストリーム、終端レコード欠落を検証。PNG本体は1×1の実PNGデータで、展開バイト列の同一性を確認。
 - 変更前のテストコミット `8ce8112` でCI成功（Run #38497149698）。実装コミット `62c13c1` でCI成功（Run #38497207488）。
 - **未検証:** `createImageBitmap` による実PNG画像のデコード、ブラウザのDecompressionStream互換性、Canvasでのアトラス更新・復元、WebGLの視覚的一致、実ユーザーパック、古いセーブデータ。
+
+## 追加実施：標準アトラス復元の責務分離（2026-10-14）
+
+- `feature/refactor-resource-pack-atlas-reset-20261014`：`resetPack()` のCanvasサイズ更新・元画像復元・`refreshAtlas()` を `restoreDefaultPackAtlas()` に抽出。保存済みパック削除→アトラス再描画→通知の順を変更しない。
+- `tests/refactor-resource-pack-atlas-reset.test.mjs`：保存キー削除、Canvas縦横更新、元画像の再描画、atlasのテクスチャ更新、通知の順を模擬Canvasでテスト。ストレージ削除例外があっても復元する動作、およびCanvas描画例外を成功扱いしない動作を固定。
+- 変更前テストのみの `2e117b0` でCI成功（Run #38497381055）。実装 `83faf5a` でCI成功（Run #38497417631）。
+- **未検証:** ブラウザCanvasによる見た目とテクスチャ転送、`createImageBitmap` 実PNGデコード、旧保存のアトラス画像を起動時に復元する経路、WebGL表示と古いセーブデータの相互作用。

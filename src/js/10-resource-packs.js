@@ -202,7 +202,8 @@ async function packFiles(files){toast('テクスチャパックを読み込み�
  try{for(const f of files){const n=f.name.toLowerCase();if(n.endsWith('.zip'))(await readZip(await f.arrayBuffer())).forEach((v,k)=>map.set(k,v));else if(n.endsWith('.png'))map.set(n.replace(/\.png$/,''),new Uint8Array(await f.arrayBuffer()))}}
  catch(e){return toast('読み込みに失敗しました（zipが壊れているか未対応の形式です）')}
  const c=await applyPack(map);toast(c?c+'種類のテクスチャを適用しました':'対応するブロックテクスチャが見つかりません（assets/minecraft/textures/block/ のPNGが必要です）')}
-function resetPack(){try{localStorage.removeItem(PK)}catch(e){}ac.width=16*CO;ac.height=16*RW;ac.getContext('2d').putImageData(im,0,0);refreshAtlas();toast('標準テクスチャに戻しました')}
+function restoreDefaultPackAtlas(){ac.width=16*CO;ac.height=16*RW;ac.getContext('2d').putImageData(im,0,0);refreshAtlas()}
+function resetPack(){try{localStorage.removeItem(PK)}catch(e){}restoreDefaultPackAtlas();toast('標準テクスチャに戻しました')}
 try{const sp=JSON.parse(localStorage.getItem(PK)||'null');if(sp&&sp.n===N){const i2=new Image();i2.onload=()=>{ac.width=i2.width;ac.height=i2.height;const g=ac.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(i2,0,0);refreshAtlas()};i2.src=sp.d}}catch(e){}
 {const fi=Object.assign(document.createElement('input'),{type:'file',accept:'.zip,.png,image/png,application/zip',multiple:true});fi.style.display='none';document.body.appendChild(fi);
  fi.onchange=()=>{if(fi.files.length)packFiles([...fi.files]);fi.value=''};
