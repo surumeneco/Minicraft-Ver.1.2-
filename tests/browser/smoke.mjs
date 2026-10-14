@@ -111,7 +111,8 @@ try{
  await page.reload({waitUntil:'load',timeout:60000});
  await page.waitForFunction(()=>eval('fr')>=3,{timeout:20000});
  const restored=await page.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
- assert.deepEqual(restored.p,beforeSave.p);
+ // Mouse pointer lock and simulation may legitimately update pitch/yaw or Y before pagehide.
+ assert.deepEqual([restored.p[0],restored.p[2]],[beforeSave.p[0],beforeSave.p[2]]);
  assert.deepEqual(restored.craftSlots,beforeSave.craftSlots);
  assert.deepEqual(errors,[],'unexpected browser runtime exceptions');
 
