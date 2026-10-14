@@ -61,8 +61,12 @@ try{
  const res=await page.goto('http://127.0.0.1:8000/',{waitUntil:'load',timeout:60000});
  assert.equal(res.status(),200);
  await page.waitForFunction(()=>typeof startGame==='function'&&document.getElementById('startBtn'),{timeout:60000});
- const gl=await page.evaluate(()=>!!document.getElementById('c').getContext('webgl'));
- assert.equal(gl,true,'WebGL context unavailable (do not treat as visual pass)');
+ const gl=await page.evaluate(()=>{
+  const canvas=document.getElementById('c');
+  return {webgl2:!!canvas.getContext('webgl2'),webgl:!!canvas.getContext('webgl')};
+ });
+ console.log('Canvas rendering contexts:',gl,'runtime errors:',errors);
+ assert.equal(gl.webgl2||gl.webgl,true,'WebGL context unavailable (do not treat as visual pass)');
  await page.locator('#startBtn').click();
  await page.waitForFunction(()=>document.getElementById('startGuide').style.display==='flex');
  await page.locator('#closeGuide').click();
