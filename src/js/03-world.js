@@ -68,6 +68,10 @@ function decorateChunkTrees(d,top,X0,Z0){
   const kind=tr[0],log=tr[1],leaf=tr[2];
   const tall=kind==='spruce'?6:kind==='acacia'?5:4;
   for(let y=1;y<=tall;y++)set(tx,h+y,tz,log);
+  decorateTreeCrown(kind,tx,tz,h,tall,leaf,set);}
+ return top;
+}
+function decorateTreeCrown(kind,tx,tz,h,tall,leaf,set){
   if(kind==='acacia'){
    // アカシアは横に広がった樹冠にし、最上部まで葉で覆って上から幹が見えないようにする。
    for(let dy=3;dy<=6;dy++){
@@ -93,8 +97,7 @@ function decorateChunkTrees(d,top,X0,Z0){
      if(edge<=rad+(wobble>.72?1:0) && !(Math.abs(dx)===rad&&Math.abs(dz)===rad&&wobble<.55))set(tx+dx,h+dy,tz+dz,leaf,true);
     }
    }
-  }}
- return top;
+  }
 }
 function genChunk(cx,cz){
  const d=new Uint16Array(256*H),X0=cx*16,Z0=cz*16;let top=1;
