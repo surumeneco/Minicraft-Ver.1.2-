@@ -1,0 +1,33 @@
+name: WebGL visual parity
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'src/js/**'
+      - 'index.html'
+      - 'tests/browser/visual-parity.mjs'
+      - '.github/workflows/visual-parity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Playwright dependency
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Install Chromium and headless runtime dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Compare base and head rendered WebGL samples
+        env:
+          VISUAL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node tests/browser/visual-parity.mjs
