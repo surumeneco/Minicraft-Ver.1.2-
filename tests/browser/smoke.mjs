@@ -358,6 +358,46 @@ try{
  assert.ok(breakResult.events.some(e=>e.trusted===false&&e.button===0),'synthetic repeated mousedown must be observed');
  console.log('Held block break removed two camera-targeted blocks:',placedBreakBlocks);
 
+ // Physical right-button hold must put two actual blocks into the next ray
+ // cells, including one placed by the timer-generated untrusted event.
+ const placement=await legacy.evaluate(()=>{
+  const player=eval('P');
+  window.__placeAimPin=setInterval(()=>{
+   player.x=40.5;player.y=70;player.z=40.5;
+   player.vx=0;player.vy=0;player.vz=0;
+   player.yaw=0;player.pitch=0;
+  },10);
+  player.x=40.5;player.y=70;player.z=40.5;player.yaw=0;player.pitch=0;
+  eval('hot')[eval('sel')]=3;
+  setB(40,71,37,3);
+  setB(40,71,38,0);
+  setB(40,71,39,0);
+  updatePlayerCamera();
+  const t=eval('target=ray()');
+  if(!t||t.z!==37||t.x!==40||t.y!==71)throw Error('placement target is not the intended distant block');
+  window.__placeEvents=[];
+  window.addEventListener('mousedown',e=>{if(e.button===2)window.__placeEvents.push({trusted:e.isTrusted,aim:eval('target')?.z})});
+  return {selected:eval('hot')[eval('sel')],target:[t.x,t.y,t.z],prior:[getB(40,71,38),getB(40,71,39)]};
+ });
+ assert.deepEqual(placement.prior,[0,0]);
+ await legacy.mouse.down({button:'right'});
+ let placementFailure=null;
+ try{
+  await legacy.waitForFunction(()=>getB(40,71,38)===3&&getB(40,71,39)===3,null,{timeout:10000});
+ }catch(e){placementFailure=e.message}
+ const placed=await legacy.evaluate(()=>({
+  world:[getB(40,71,38),getB(40,71,39)],
+  held:eval('rightPlaceHeld'),
+  events:window.__placeEvents
+ }));
+ await legacy.mouse.up({button:'right'});
+ await legacy.evaluate(()=>clearInterval(window.__placeAimPin));
+ await legacy.waitForFunction(()=>eval('rightPlaceHeld')===false&&eval('rightPlaceTimer')===0);
+ assert.equal(placementFailure,null,'two adjacent blocks must be placed by a real right-button hold');
+ assert.deepEqual(placed.world,[3,3]);
+ assert.ok(placed.events.some(e=>!e.trusted),'the second placement must go through the held-input repeated mouse event');
+ console.log('Held block placement added two actual blocks:',placed);
+
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
  assert.equal(normalized.invCount[101],5);
