@@ -333,6 +333,37 @@ try{
  assert.equal(mobAfter.alive,true);
  assert.equal(mobAfter.before,mobBefore.hp-5,'actual browser mouse click must deal unarmed melee damage');
 
+ // Equip the iron sword crafted in the multi-input UI and exercise the same
+ // physical mouse path with equipment-derived damage and item durability.
+ await legacy.keyboard.press('e');
+ await legacy.waitForFunction(()=>document.getElementById('inv').style.display==='flex');
+ await legacy.locator('#invTabs button').filter({hasText:'インベントリ'}).click();
+ const swordIndex=await slotIndex(combo.sword);
+ assert.ok(swordIndex>=0&&swordIndex<27);
+ await legacy.locator('#invBody .playerInvGrid .slot').nth(swordIndex).click();
+ assert.equal(await legacy.evaluate(()=>eval('equipped').weapon),combo.sword);
+ await legacy.keyboard.press('e');
+ await legacy.waitForFunction(()=>document.getElementById('inv').style.display==='none');
+ const armedBefore=await legacy.evaluate(sword=>{
+  const m=window.__combatTestMob,o=eval('cam').position,d=eval('rdir');
+  window.__pinArmedMob=setInterval(()=>{
+   m.x=o.x+d.x*2;m.y=o.y+d.y*2-m.T.h/2;m.z=o.z+d.z*2;
+   m.vy=0;m.kx=0;m.kz=0;
+  },10);
+  m.x=o.x+d.x*2;m.y=o.y+d.y*2-m.T.h/2;m.z=o.z+d.z*2;
+  if(!pickMob()||pickMob().m!==m)throw Error('equipped target is not in melee range');
+  return {hp:m.hp,damage:eval('ITEMS')[sword].damage,dur:eval('ITEMS')[sword].dur};
+ },combo.sword);
+ await legacy.mouse.click(640,400,{button:'left'});
+ await legacy.evaluate(()=>clearInterval(window.__pinArmedMob));
+ const armedAfter=await legacy.evaluate(sword=>({
+  hp:window.__combatTestMob.hp,alive:eval('mobs').includes(window.__combatTestMob),
+  durability:eval('ITEMS')[sword].dur
+ }),combo.sword);
+ assert.equal(armedAfter.hp,armedBefore.hp-armedBefore.damage,'equipped weapon damage must be applied by physical browser click');
+ assert.equal(armedAfter.durability,armedBefore.dur-1,'one actual sword hit must consume one durability');
+ assert.equal(armedAfter.alive,false,'fatal equipped attack must remove mob from active world');
+
  // Exercise the real world ray -> mousedown -> 180ms synthetic repeat path
  // with two adjacent blocks in the player's high-altitude line of sight.
  const placedBreakBlocks=await legacy.evaluate(()=>{
