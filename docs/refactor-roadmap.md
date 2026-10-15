@@ -1,10 +1,40 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `179f18aa451903f9f08fb6169ab47a2477925090`（2026-10-15、PR #36統合後）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `9ab9c7358fdee13cebc5c3921a4609ee2eaa08a7`（2026-10-15、PR #48統合後）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
 提出済みの `PR/` ブランチと `main` は変更しない。
+
+## 現在の状態（2026-10-15、PR #48統合後）
+
+- `develop` HEAD: `9ab9c7358fdee13cebc5c3921a4609ee2eaa08a7`。Node.js **276テスト成功・失敗0**（PR #48構造CIと統合後構造CI）、Chromium実ブラウザCIはPR #48時点で成功。統合後ブラウザCIは別途外部実行結果で確認する。
+- 初期PR #1〜#37の成果に加え、以下のPR #38〜#48をすべて`develop`へ統合済み。`main`と既存の提出済み`PR/**`ブランチには変更なし。
+
+| PR | 検証済みの主な対象 |
+| --- | --- |
+| [#38](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/38) | ブラウザ実マウス押下・解放・Mobの素手攻撃 |
+| [#39](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/39) | WebGL2のGPU描画バッファ実読出し（非透明・非黒のスモーク検査） |
+| [#40](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/40) | VM実rsTickの比較器・観測器・ホッパー・ピストン4ケース |
+| [#41](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/41) | CIの変更スコープ・回帰テスト・文書証拠／リファクタ前Green |
+| [#42](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/42) | 回路スキャンの下位8bit IDと高位状態を正規アクセサへ変更 |
+| [#43](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/43) | 実マウス長押しによる2個の連続ブロック破壊 |
+| [#44](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/44) | 実マウス右長押しによる2個の連続ブロック設置 |
+| [#45](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/45) | 2×2 UIの複数素材レシピ・途中不一致・正確な消費 |
+| [#46](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/46) | クラフトした武器の実GUI装備・近接ダメージ・耐久・Mob除去 |
+| [#47](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/47) | 実チャンクの回路登録・ダスト強度・ランプON/OFF・比較器1tick遅延。VM側方位も実定義へ修正 |
+| [#48](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/48) | 実チャンクのピストンアニメーション・ブロック移動、ホッパーの実チェスト転送、TNTのPrimed Entity生成 |
+
+### 現在も残っている範囲と完了の条件
+
+1. **Mobの長期行動とプレイヤー防御**：自律移動中の戦闘・敵からの継続被弾・盾/防具の実UI連携・死亡/リスポーンを、独立のE2Eで固定する。
+2. **複雑な機構と長期クロック**：実TNT爆発によるチャンク破壊・連鎖爆発・Mob/プレイヤーダメージ、回路の長周期安定性・複雑な機構間接続を再現環境で確認する。
+3. **描画厳密性**：現在はフレームバッファ非黒・非透明とテクスチャアトラス変化のスモーク確認のみ。GPU描画結果のUV/頂点色/AO・チャンク境界を、変更前後の画像オラクルで比較する。
+4. **構造上の残り**：Block ID直接ビット演算の未移行サイト、ワールド生成・メッシュ・描画素材・UI/入力の残る複合責務を、意味を保ったテスト先行の独立PRで抽出する。
+5. **実セーブデータ**：合成旧スキーマのロード・保存・リロードは通過したが、利用者の歴史的な実保存ファイルは未提供。全実ファイルとの互換は未確認。
+6. **CAT-TDDの正式Gate**：PRの差分／pre-change Green検査は導入済み。ただし正本のconfirmed仕様/Work/TestModelがなく、process-closure・model-conformance・implementation-conformanceは依然`not-run`。CI成功を適合証拠と置き換えない。
+
+以下の「PR #36統合後」の節は当時の履歴であり、最新の状態・残作業の判定はこの節を優先する。
 
 ## 最新状況（2026-10-15、PR #36統合後）
 
