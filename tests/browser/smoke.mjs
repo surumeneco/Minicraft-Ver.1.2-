@@ -712,6 +712,48 @@ try{
  assert.equal(endurance.fourthTick,0,'subsequent frame must complete hopper fourth-tick cycle');
  console.log('Real circuit endurance and bounded catch-up:',endurance);
 
+ // Run actual hostile mob movement/attack physics over many simulated AI
+ // steps, rather than only invoking a single attack decision.
+ const hostileSoak=await legacy.evaluate(()=>{
+  const p=eval('P');
+  p.x=75.5;p.y=70;p.z=75.5;p.yaw=0;p.pitch=0;p.vx=0;p.vy=0;p.vz=0;
+  const foundation=[];
+  for(let x=72;x<=79;x++)for(let z=67;z<=80;z++)foundation.push([x,69,z,3]);
+  applyChanges(foundation);
+  eval('flying=true');eval('hp=20');updateHp();
+  addMob('zombie',p.x,70,p.z-5);
+  const m=eval('mobs').at(-1);m.atk=0;
+  const initial=Math.hypot(m.x-p.x,m.z-p.z);
+  let closest=initial,steps=0;
+  for(let i=0;i<180;i++){
+   if(!eval('mobs').includes(m))break;
+   stepMob(m,.1);steps++;
+   closest=Math.min(closest,Math.hypot(m.x-p.x,m.z-p.z));
+   if(eval('hp')<=11)break;
+  }
+  const beforeRespawn=eval('hp'),targetAtDeath=m;
+  hurt(1000);
+  const result={initial,closest,steps,beforeRespawn,
+   hpAfterRespawn:eval('hp'),hungerAfterRespawn:eval('hunger'),
+   hostileSurvived:eval('mobs').includes(targetAtDeath),
+   respawnX:p.x,respawnZ:p.z,
+   spawnX:eval('SX')+.5,spawnZ:eval('SZ')+.5};
+  for(const c of foundation)setB(c[0],c[1],c[2],0);
+  return result;
+ });
+ assert.ok(hostileSoak.closest<hostileSoak.initial-1,
+  'actual zombie AI must approach its target through the world');
+ assert.ok(hostileSoak.steps>=10,'hostile AI must advance across multiple simulation steps');
+ assert.ok(hostileSoak.beforeRespawn<20,
+  'sustained hostile AI must eventually damage an unshielded player');
+ assert.equal(hostileSoak.hpAfterRespawn,20);
+ assert.equal(hostileSoak.hungerAfterRespawn,10);
+ assert.equal(hostileSoak.hostileSurvived,false,
+  'player death must remove active hostile mobs');
+ assert.equal(hostileSoak.respawnX,hostileSoak.spawnX);
+ assert.equal(hostileSoak.respawnZ,hostileSoak.spawnZ);
+ console.log('Long-running hostile AI and actual death/respawn:',hostileSoak);
+
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
  assert.equal(normalized.invCount[101],5);
