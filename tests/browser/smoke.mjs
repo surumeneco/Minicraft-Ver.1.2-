@@ -669,6 +669,49 @@ try{
   'releasing shield must restore real hostile melee damage after armor mitigation');
  console.log('Actual armor and Shift shield defense:',{armorResult,blocked,unblocked});
 
+ // 120 seconds of actual 10Hz redstone logic under sustained power and
+ // 120 additional on/off cycles: no accumulating stale registration or output.
+ const endurance=await legacy.evaluate(()=>{
+  const x=60,y=71,z=52,lever=eval('LEVER'),dust=eval('RED_DUST'),
+   lamp=eval('RED_LAMP'),rkey=eval('rk');
+  setB(x,y,z,lever|256);setB(x+1,y,z,dust);setB(x+2,y,z,lamp);
+  for(let i=0;i<600;i++)rsTick();
+  const on={dust:getB(x+1,y,z)>>8,lamp:getB(x+2,y,z)>>8};
+  setB(x,y,z,lever);for(let i=0;i<600;i++)rsTick();
+  const off={dust:getB(x+1,y,z)>>8,lamp:getB(x+2,y,z)>>8};
+  let bad=0;
+  for(let i=0;i<120;i++){
+   setB(x,y,z,lever|256);rsTick();
+   if((getB(x+2,y,z)>>8)!==1)bad++;
+   setB(x,y,z,lever);rsTick();
+   if((getB(x+2,y,z)>>8)!==0)bad++;
+  }
+  setB(x,y,z,0);setB(x+1,y,z,0);setB(x+2,y,z,0);
+  rsTick();
+  const cleaned=[0,1,2].every(d=>!eval('RS').has(rkey(x+d,y,z)));
+
+  // An unusually long frame is intentionally capped at three circuit ticks.
+  const hx=64,hz=52;
+  setB(hx,y,hz,eval('HOPPER'));
+  const hopper=eval('RS').get(rkey(hx,y,hz));
+  eval('rsAcc=0');
+  // .8s gives >.3s remaining after the three-tick cap, so backlog is discarded.
+  advanceCircuitClock(.8);
+  const cappedHopperTicks=hopper.ht,remaining=eval('rsAcc');
+  advanceCircuitClock(.1);
+  const fourthTick=hopper.ht;
+  setB(hx,y,hz,0);
+  return {on,off,bad,cleaned,cappedHopperTicks,remaining,fourthTick};
+ });
+ assert.deepEqual(endurance.on,{dust:15,lamp:1});
+ assert.deepEqual(endurance.off,{dust:0,lamp:0});
+ assert.equal(endurance.bad,0,'repeated real-world lever toggling must never leave wrong lamp state');
+ assert.equal(endurance.cleaned,true,'deleted circuit cells must leave no registered entries');
+ assert.equal(endurance.cappedHopperTicks,3,'circuit clock must cap catch-up to 3 ticks');
+ assert.equal(endurance.remaining,0,'oversized frame backlog must be cleared');
+ assert.equal(endurance.fourthTick,0,'subsequent frame must complete hopper fourth-tick cycle');
+ console.log('Real circuit endurance and bounded catch-up:',endurance);
+
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
  assert.equal(normalized.invCount[101],5);
