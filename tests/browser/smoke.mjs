@@ -311,9 +311,17 @@ try{
   return !!t&&t.x===p[0]&&t.y===p[1]&&t.z===p[2];
  },{timeout:6000});
  await legacy.mouse.down({button:'left'});
- await legacy.waitForFunction(()=>window.__breakCells.every(([x,y,z])=>getB(x,y,z)===0),{timeout:4000});
+ await legacy.waitForTimeout(700);
+ const breakResult=await legacy.evaluate(()=>({
+  cells:window.__breakCells.map(([x,y,z])=>[x,y,z,getB(x,y,z)]),
+  target:eval('target'),
+  held:eval('leftBreakHeld'),
+  timer:eval('leftBreakTimer'),locked:eval('locked'),fallback:eval('fallback')
+ }));
  await legacy.mouse.up({button:'left'});
  await legacy.waitForFunction(()=>eval('leftBreakHeld')===false&&eval('leftBreakTimer')===0);
+ console.log('Repeated break debug:',JSON.stringify(breakResult));
+ assert.ok(breakResult.cells.every(c=>c[3]===0),'both actual world blocks must be removed by held mouse');
  console.log('Held block break removed two camera-targeted blocks:',placedBreakBlocks);
 
  await legacy.evaluate(()=>save(false));
