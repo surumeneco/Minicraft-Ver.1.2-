@@ -531,10 +531,14 @@ try{
   const upper=contAt(x,y+1,z),mid=contAt(x,y,z),lower=contAt(x,y-1,z);
   const id=eval('I').iron;
   upper[0]=[id,1];
+  // Inventory slots are mutable [item,count] arrays. Record primitive copies
+  // at each phase instead of retaining references that are later decremented.
+  const snapshot=()=>({upper:upper[0]?[...upper[0]]:null,
+   hopper:mid[0]?[...mid[0]]:null,lower:lower[0]?[...lower[0]]:null});
   for(let i=0;i<4;i++)rsTick();
-  const afterPull={upper:upper[0],hopper:mid[0],lower:lower[0]};
+  const afterPull=snapshot();
   for(let i=0;i<4;i++)rsTick();
-  const afterPush={upper:upper[0],hopper:mid[0],lower:lower[0]};
+  const afterPush=snapshot();
   for(let yy=y-1;yy<=y+1;yy++){setB(x,yy,z,0);delete eval('chests')[rk0(x,yy,z)]}
   return {id,afterPull,afterPush};
  });
