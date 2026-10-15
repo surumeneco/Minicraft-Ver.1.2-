@@ -461,6 +461,43 @@ try{
  assert.ok(placed.events.some(e=>!e.trusted),'the second placement must go through the held-input repeated mouse event');
  console.log('Held block placement added two actual blocks:',placed);
 
+ // Real-world, real-chunk circuit integration: setB must register redstone,
+ // rsTick must mutate encoded block states and light the actual lamp.
+ // Unlike the VM fixture this uses the production getC/setB/mesh/applyChanges.
+ const realCircuit=await legacy.evaluate(()=>{
+  const x=44,y=71,z=32;
+  const read=()=>({first:getB(x,y,z+1)>>8,second:getB(x,y,z+2)>>8,
+   lamp:getB(x,y,z+3)>>8});
+  const out={};
+  setB(x,y,z,eval('RBLK'));
+  setB(x,y,z+1,eval('RED_DUST'));
+  setB(x,y,z+2,eval('RED_DUST'));
+  setB(x,y,z+3,eval('RED_LAMP'));
+  out.registered=[0,1,2,3].map(n=>eval('RS').has(eval('rk')(x,y,z+n)));
+  rsTick();out.lineOn=read();
+  setB(x,y,z,0);rsTick();out.lineOff=read();
+
+  // Comparator facing south (+Z) emits previous-tick output.
+  setB(x,y,z,eval('RBLK'));
+  setB(x,y,z+1,eval('COMPARATOR')|(2<<8)); // D4[2] faces +Z in production
+  rsTick();out.comparatorFirst=read();
+  rsTick();out.comparatorSecond=read();
+  setB(x,y,z,0);
+  rsTick();out.comparatorShutdownLag=read();
+  rsTick();out.comparatorShutdownDone=read();
+  for(let n=0;n<4;n++)setB(x,y,z+n,0);
+  return out;
+ });
+ assert.deepEqual(realCircuit.registered,[true,true,true,true],
+  'real setB must register circuit components');
+ assert.deepEqual(realCircuit.lineOn,{first:15,second:14,lamp:1});
+ assert.deepEqual(realCircuit.lineOff,{first:0,second:0,lamp:0});
+ assert.equal(realCircuit.comparatorFirst.lamp,0);
+ assert.equal(realCircuit.comparatorSecond.lamp,1);
+ assert.equal(realCircuit.comparatorShutdownLag.lamp,1);
+ assert.equal(realCircuit.comparatorShutdownDone.lamp,0);
+ console.log('Live chunk/block redstone circuit integration:',realCircuit);
+
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
  assert.equal(normalized.invCount[101],5);
