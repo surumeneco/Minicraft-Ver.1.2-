@@ -150,6 +150,37 @@ try{
  assert.deepEqual([restoredLegacy.hp,restoredLegacy.hunger],[20,10]);
  assert.ok(restoredLegacy.worldClock>=0&&restoredLegacy.worldClock<1,'default world clock may advance with live frames');
  assert.deepEqual(restoredLegacy.slots,[null,null,null,null]);
+
+ // A real Chromium click goes through the chest grid's registered DOM handlers.
+ await legacy.locator('#startBtn').click();
+ await legacy.waitForFunction(()=>document.getElementById('startGuide').style.display==='flex');
+ await legacy.evaluate(()=>{if(document.pointerLockElement)document.exitPointerLock()});
+ await legacy.locator('#closeGuide').click();
+ await legacy.waitForFunction(()=>document.getElementById('msg').style.display==='none');
+ await legacy.evaluate(()=>{
+  eval('invCount')[1]=5;
+  eval('chests')['3,35,3']=[[1,2],null];
+  openChest(3,35,3);
+ });
+ await legacy.waitForFunction(()=>document.getElementById('chestUI').style.display==='flex');
+ await legacy.locator('#chestBody .chGrid').first().locator('.it').first().click();
+ let transfer=await legacy.evaluate(()=>({
+  count:eval('invCount')[1],slot:eval('chests')['3,35,3'][0]
+ }));
+ assert.deepEqual(transfer,{count:7,slot:null});
+ const ownedIndex=await legacy.evaluate(()=>{
+  const items=eval('invCount');
+  return Object.keys(items).map(Number).filter(id=>items[id]>0).indexOf(1);
+ });
+ assert.ok(ownedIndex>=0);
+ await legacy.locator('#chestBody .chGrid').nth(1).locator('.it').nth(ownedIndex).click({button:'right'});
+ transfer=await legacy.evaluate(()=>({
+  count:eval('invCount')[1],slot:eval('chests')['3,35,3'][0]
+ }));
+ assert.deepEqual(transfer,{count:6,slot:[1,1]});
+ await legacy.keyboard.press('e');
+ await legacy.waitForFunction(()=>document.getElementById('chestUI').style.display==='none');
+
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
  assert.equal(normalized.invCount[101],5);
