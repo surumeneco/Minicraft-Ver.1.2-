@@ -66,3 +66,15 @@ test('deep-water, snow, cave lava/air and bedrock guards preserve their exact vo
   assert.deepEqual(b,a);
  }
 });
+
+test('deep cave override preserves protected bedrock, lava threshold and above-surface water',()=>{
+ const f=fixture(),plains=f.ctx.BI.PLAINS;
+ f.ctx.cave=()=>true;f.ctx.ore=()=>14;
+ assert.equal(f.ctx.terrainBlockValue(2,4,3,20,false,plains),14,
+  'bedrock-adjacent ore at y=4 is not cave-replaced');
+ assert.equal(f.ctx.terrainBlockValue(2,5,3,20,false,plains),25);
+ assert.equal(f.ctx.terrainBlockValue(2,11,3,20,false,plains),25);
+ assert.equal(f.ctx.terrainBlockValue(2,12,3,20,false,plains),0);
+ assert.equal(f.ctx.terrainBlockValue(2,20,3,20,false,plains),1);
+ assert.equal(f.ctx.terrainBlockValue(2,21,3,20,false,plains),24);
+});

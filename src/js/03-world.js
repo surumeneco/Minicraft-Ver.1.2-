@@ -52,8 +52,13 @@ function terrainBlockValue(x,y,z,h,sd,bio){
   if(bio===BI.COAST){surface=6;fill=16}
   else if(bio===BI.SNOW){surface=BID.snow;fill=2}
  }
- let b=y>h?WA:y==h?surface:y>h-4?fill:ore(x,y,z);
- if(y>4&&y<h&&cave(x,y,z))b=y<=11?LA:0;
+ const b=y>h?WA:y==h?surface:y>h-4?fill:ore(x,y,z);
+ return applyCaveOverride(x,y,z,h,b);
+}
+// Preserve the exact underground cave sample condition and lava depth split,
+// after the base ore/layer block has already been chosen.
+function applyCaveOverride(x,y,z,h,b){
+ if(y>4&&y<h&&cave(x,y,z))return y<=11?LA:0;
  return b;
 }
 function replayChunkEdits(d,top,key){
