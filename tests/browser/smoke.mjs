@@ -283,10 +283,18 @@ try{
   addMob('cow',mobX,mobY,mobZ);
   const m=eval('mobs').at(-1);
   window.__combatTestMob=m;
+  // Keep this test target on the active camera ray until the real click.
+  // Mob AI/physics are tested separately and must not race the input test.
+  window.__pinCombatMob=setInterval(()=>{
+   const o=eval('cam').position,d=eval('rdir');
+   m.x=o.x+d.x*2;m.y=o.y+d.y*2-m.T.h/2;m.z=o.z+d.z*2;
+   m.vy=0;m.kx=0;m.kz=0;
+  },10);
   return {hp:m.hp,hit:!!pickMob()};
  });
  assert.equal(mobBefore.hit,true,'real camera ray must identify seeded mob');
  await legacy.mouse.click(640,400,{button:'left'});
+ await legacy.evaluate(()=>clearInterval(window.__pinCombatMob));
  const mobAfter=await legacy.evaluate(()=>({
   before:window.__combatTestMob.hp,alive:eval('mobs').includes(window.__combatTestMob)
  }));
