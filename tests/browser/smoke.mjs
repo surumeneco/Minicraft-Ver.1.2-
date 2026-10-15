@@ -313,6 +313,8 @@ try{
   if(cells.length<2)throw Error('camera cells are not distinct');
   for(const [x,y,z]of cells.slice(0,2))setB(x,y,z,3);
   window.__breakCells=cells.slice(0,2);
+  window.__heldEvents=[];
+  window.addEventListener('mousedown',e=>window.__heldEvents.push({trusted:e.isTrusted,button:e.button,aim:eval('target')?.z,source:e.target?.constructor?.name}));
   return window.__breakCells;
  });
  await legacy.waitForFunction(()=>{
@@ -325,7 +327,9 @@ try{
   cells:window.__breakCells.map(([x,y,z])=>[x,y,z,getB(x,y,z)]),
   target:eval('target'),
   held:eval('leftBreakHeld'),
-  timer:eval('leftBreakTimer'),locked:eval('locked'),fallback:eval('fallback')
+  timer:eval('leftBreakTimer'),locked:eval('locked'),fallback:eval('fallback'),
+  events:window.__heldEvents,display:document.getElementById('msg').style.display,
+  gamePaused:eval('pauseMenuOpen'),inventory:eval('inv')
  }));
  await legacy.mouse.up({button:'left'});
  await legacy.evaluate(()=>clearInterval(window.__holdAimPin));
