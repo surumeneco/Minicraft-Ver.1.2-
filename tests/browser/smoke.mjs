@@ -567,17 +567,17 @@ try{
  // cell. Also validate chest item drops and damage/removal for a nearby Mob.
  const blastResult=await legacy.evaluate(()=>{
   const x=56,y=71,z=48;
-  const {TNTB,RBLK,CHEST}= {TNTB:eval('TNTB'),RBLK:eval('RBLK'),CHEST:eval('CHEST')};
+  const tntId=eval('TNTB'),powerId=eval('RBLK'),chestId=eval('CHEST');
   const iron=eval('I').iron,k=eval('rk')(x+1,y,z);
   const beforePrimed=eval('primed').length,beforeEffects=eval('fxs').length;
   const beforeDrops=eval('droppedItems').length;
-  setB(x+1,y,z,CHEST);
+  setB(x+1,y,z,chestId);
   contAt(x+1,y,z)[0]=[iron,2];
   setB(x,y,z+1,3);
   setB(x,y,z+2,3);
   const cow=addMob('cow',x+.5,y,z+1.5);
   const mob=eval('mobs').at(-1),beforeHp=mob.hp;
-  setB(x,y,z,TNTB);setB(x-1,y,z,RBLK);
+  setB(x,y,z,tntId);setB(x-1,y,z,powerId);
   rsTick();
   const primedList=eval('primed'),newPrimed=primedList.slice(beforePrimed);
   if(newPrimed.length!==1)throw Error('powered TNT must create exactly one fuse');
