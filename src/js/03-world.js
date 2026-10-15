@@ -259,13 +259,8 @@ function meshVertexColor(c,g,x,y,z,q,d,k){
  const shade=Math.min(1.8,1+bl*1.0)*Math.max(.72,1-cornerAO);
  return k*shade;
 }
-function mesh(c){
- const nbc=(a,b)=>{const o=C.get(ck(a,b));return o||((a<-LIM||a>=LIM||b<-LIM||b>=LIM)?null:0)};   // 未生成の隣=0(空気扱い) / ワールド外=null(壁)
- const cs=[nbc(c.cx-1,c.cz-1),nbc(c.cx,c.cz-1),nbc(c.cx+1,c.cz-1),nbc(c.cx-1,c.cz),c,nbc(c.cx+1,c.cz),nbc(c.cx-1,c.cz+1),nbc(c.cx,c.cz+1),nbc(c.cx+1,c.cz+1)];
- c.miss=(cs[1]===0?1:0)|(cs[5]===0?2:0)|(cs[7]===0?4:0)|(cs[3]===0?8:0);const firstMesh=!c.v;
- const g=(x,y,z)=>{if(y<0)return 10;if(y>=H)return 0;const o=cs[(z<0?0:z>15?2:1)*3+(x<0?0:x>15?2:1)];return o?o.d[(x&15)+16*((z&15)+16*y)]:(o===0?(y<=hAt(c.cx*16+x,c.cz*16+z)?3:y<=SL?WA:0):10)};   // 未生成の隣は地形の高さから推定(不要な境界面を作らない)
- const SS={p:[],c:[],u:[],i:[],n:0},WS={p:[],c:[],u:[],i:[],n:0},GS={p:[],c:[],i:[],n:0};
- const addGrass=(x,y,z,seed)=>{
+// Shared presentation-only foliage builder. Preserve plant sampling and vertex order.
+function appendChunkGrassGeometry(GS,c,x,y,z,seed){
  const X=x+c.cx*16,Z=z+c.cz*16,base=hh(X,Z,seed);
  if(base>.48)return;
  const flowerRoll=hh(X+91,Z-37,seed+71);
@@ -317,7 +312,14 @@ function mesh(c){
   quad(rx-rs,ry,rz,rx+rs,ry,rz,rx+rs,ry+rs*.65,rz,rx-rs,ry+rs*.65,rz,red);
   quad(rx,ry,rz-rs,rx,ry,rz+rs,rx,ry+rs*.65,rz+rs,rx,ry+rs*.65,rz-rs,red);
  }
-};;
+}
+function mesh(c){
+ const nbc=(a,b)=>{const o=C.get(ck(a,b));return o||((a<-LIM||a>=LIM||b<-LIM||b>=LIM)?null:0)};   // 未生成の隣=0(空気扱い) / ワールド外=null(壁)
+ const cs=[nbc(c.cx-1,c.cz-1),nbc(c.cx,c.cz-1),nbc(c.cx+1,c.cz-1),nbc(c.cx-1,c.cz),c,nbc(c.cx+1,c.cz),nbc(c.cx-1,c.cz+1),nbc(c.cx,c.cz+1),nbc(c.cx+1,c.cz+1)];
+ c.miss=(cs[1]===0?1:0)|(cs[5]===0?2:0)|(cs[7]===0?4:0)|(cs[3]===0?8:0);const firstMesh=!c.v;
+ const g=(x,y,z)=>{if(y<0)return 10;if(y>=H)return 0;const o=cs[(z<0?0:z>15?2:1)*3+(x<0?0:x>15?2:1)];return o?o.d[(x&15)+16*((z&15)+16*y)]:(o===0?(y<=hAt(c.cx*16+x,c.cz*16+z)?3:y<=SL?WA:0):10)};   // 未生成の隣は地形の高さから推定(不要な境界面を作らない)
+ const SS={p:[],c:[],u:[],i:[],n:0},WS={p:[],c:[],u:[],i:[],n:0},GS={p:[],c:[],i:[],n:0};
+ const addGrass=(x,y,z,seed)=>appendChunkGrassGeometry(GS,c,x,y,z,seed);
  for(let y=0;y<c.top;y++)for(let z=0;z<16;z++)for(let x=0;x<16;x++){
   const b=c.d[x+16*(z+16*y)];if(!b)continue;const fk=FL[b&255];if(fk){fluidFaces(fk===1?WS:SS,g,x,y,z,b,BT[b&255]);continue}const fl=false,S=fl?WS:SS,bt=BT[b&255],j=.94+hh(x+c.cx*16,z+c.cz*16,y)*.1;if(b===1 && y+1<c.top && !g(x,y+1,z) && hh(x+c.cx*16,z+c.cz*16,101)<.48)addGrass(x,y,z,101);if(b>255||THIN[b]||RSF[b]){shapeFaces(SS,c,g,x,y,z,b,bt,j);continue}
   for(const[d,cq,sh]of F){const nb=g(x+d[0],y+d[1],z+d[2]);
