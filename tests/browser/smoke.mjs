@@ -254,6 +254,38 @@ try{
   [null,null,null,null]);
  assert.equal(await legacy.evaluate(id=>eval('invCount')[id],recipe.output),recipe.outputCount+1);
 
+ // Complete a multiple-ingredient recipe from the actual 2x2 inventory UI.
+ // Wrong/incomplete item multisets must show no result until all three slots
+ // contain two ingots and a stick.
+ const combo=await legacy.evaluate(()=>{
+  const id=eval('I');
+  give(id.iron,2);give(id.stick,1);
+  return {iron:id.iron,stick:id.stick,sword:id.ironSword,
+   beforeIron:eval('invCount')[id.iron],beforeStick:eval('invCount')[id.stick],
+   beforeSword:eval('invCount')[id.ironSword]||0};
+ });
+ await legacy.locator('#invTabs button').filter({hasText:'インベントリ'}).click();
+ for(let i=0;i<2;i++){
+  const index=await slotIndex(combo.iron);
+  assert.ok(index>=0);
+  await legacy.locator('#invBody .playerInvGrid .slot').nth(index).click();
+ }
+ assert.ok((await legacy.locator('#invBody .craftOut').innerText()).includes('レシピなし'));
+ const stickIndex=await slotIndex(combo.stick);
+ assert.ok(stickIndex>=0);
+ await legacy.locator('#invBody .playerInvGrid .slot').nth(stickIndex).click();
+ assert.deepEqual(await legacy.evaluate(()=>Array.from(eval('craftSlots'))),
+  [combo.iron,combo.iron,combo.stick,null]);
+ assert.ok((await legacy.locator('#invBody .craftOut').innerText()).includes('鉄の剣'));
+ await legacy.locator('#invBody .craftOut .slot').click();
+ assert.deepEqual(await legacy.evaluate(()=>Array.from(eval('craftSlots'))),[null,null,null,null]);
+ const crafted=await legacy.evaluate(ids=>({
+  iron:eval('invCount')[ids.iron],stick:eval('invCount')[ids.stick],
+  sword:eval('invCount')[ids.sword]
+ }),combo);
+ assert.deepEqual(crafted,{iron:combo.beforeIron-2,stick:combo.beforeStick-1,
+  sword:combo.beforeSword+1},'multi-input crafting must consume exactly the required ingredients');
+
  await legacy.keyboard.press('e');
  await legacy.waitForFunction(()=>document.getElementById('inv').style.display==='none');
 
