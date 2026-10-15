@@ -479,7 +479,7 @@ try{
 
   // Comparator facing south (+Z) emits previous-tick output.
   setB(x,y,z,eval('RBLK'));
-  setB(x,y,z+1,eval('COMPARATOR')); // facing +Z (state 0)
+  setB(x,y,z+1,eval('COMPARATOR')|(2<<8)); // D4[2] faces +Z in production
   rsTick();out.comparatorFirst=read();
   rsTick();out.comparatorSecond=read();
   setB(x,y,z,0);
