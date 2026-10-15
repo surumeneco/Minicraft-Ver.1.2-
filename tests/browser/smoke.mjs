@@ -563,6 +563,52 @@ try{
  assert.deepEqual(liveTnt,{air:0,created:1,visual:true,fuse:4});
  console.log('Live circuit mechanisms:',{livePiston,liveHopper,liveTnt});
 
+ // Complete the real primed TNT fuse -> blast path in a disposable high-altitude
+ // cell. Also validate chest item drops and damage/removal for a nearby Mob.
+ const blastResult=await legacy.evaluate(()=>{
+  const x=56,y=71,z=48;
+  const {TNTB,RBLK,CHEST}= {TNTB:eval('TNTB'),RBLK:eval('RBLK'),CHEST:eval('CHEST')};
+  const iron=eval('I').iron,k=eval('rk')(x+1,y,z);
+  const beforePrimed=eval('primed').length,beforeEffects=eval('fxs').length;
+  const beforeDrops=eval('droppedItems').length;
+  setB(x+1,y,z,CHEST);
+  contAt(x+1,y,z)[0]=[iron,2];
+  setB(x,y,z+1,3);
+  setB(x,y,z+2,3);
+  const cow=addMob('cow',x+.5,y,z+1.5);
+  const mob=eval('mobs').at(-1),beforeHp=mob.hp;
+  setB(x,y,z,TNTB);setB(x-1,y,z,RBLK);
+  rsTick();
+  const primedList=eval('primed'),newPrimed=primedList.slice(beforePrimed);
+  if(newPrimed.length!==1)throw Error('powered TNT must create exactly one fuse');
+  newPrimed[0].t=.005;
+  primedTick(.03);
+  const result={
+   fuseRemoved:!primedList.includes(newPrimed[0]),
+   visualExplosion:eval('fxs').length>beforeEffects,
+   markerBlocks:[getB(x,y,z+1),getB(x,y,z+2)],
+   chestRemoved:getB(x+1,y,z)===0,
+   chestItemsDropped:eval('droppedItems').slice(beforeDrops)
+    .some(d=>d.id===iron&&d.n===2),
+   mobRemoved:!eval('mobs').includes(mob),
+   mobHp:mob.hp,beforeHp
+  };
+  for(const effect of eval('fxs').slice(beforeEffects))eval('scene').remove(effect.g);
+  eval('fxs').splice(beforeEffects);
+  for(const drop of eval('droppedItems').splice(beforeDrops))eval('scene').remove(drop.g);
+  for(let xx=x-1;xx<=x+2;xx++)for(let zz=z;zz<=z+2;zz++)setB(xx,y,zz,0);
+  delete eval('chests')[k];
+  return result;
+ });
+ assert.equal(blastResult.fuseRemoved,true,'finished TNT fuse must be removed');
+ assert.equal(blastResult.visualExplosion,true,'explosion must create a visual effect');
+ assert.deepEqual(blastResult.markerBlocks,[0,0],'nearby terrain must be destroyed by real blast');
+ assert.equal(blastResult.chestRemoved,true);
+ assert.equal(blastResult.chestItemsDropped,true,'destroyed chest must drop its full inventory');
+ assert.equal(blastResult.mobRemoved,true,'blast must remove the nearby defeated Mob');
+ assert.ok(blastResult.mobHp<blastResult.beforeHp,'Mob must receive actual blast damage');
+ console.log('Real fuse/terrain/chest/Mob explosion:',blastResult);
+
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
  assert.equal(normalized.invCount[101],5);
