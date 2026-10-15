@@ -181,6 +181,40 @@ try{
  await legacy.keyboard.press('e');
  await legacy.waitForFunction(()=>document.getElementById('chestUI').style.display==='none');
 
+ // Test actual browser inventory clicks, armor/equipment state, craft slot return.
+ const equipIds=await legacy.evaluate(()=>{
+  const id=eval('I'),count=eval('invCount');
+  give(id.shield,1);give(id.iron,1);
+  return {shield:id.shield,iron:id.iron,
+   shieldCount:count[id.shield],ironCount:count[id.iron]};
+ });
+ await legacy.keyboard.press('e');
+ await legacy.waitForFunction(()=>document.getElementById('inv').style.display==='flex');
+ await legacy.locator('#invTabs button').filter({hasText:'インベントリ'}).click();
+ const slotIndex=async id=>legacy.evaluate(target=>{
+  const owned=Object.keys(eval('invCount')).map(Number).filter(id=>eval('invCount')[id]>0);
+  return owned.indexOf(target);
+ },id);
+ const shieldIndex=await slotIndex(equipIds.shield);
+ assert.ok(shieldIndex>=0&&shieldIndex<27);
+ await legacy.locator('#invBody .playerInvGrid .slot').nth(shieldIndex).click();
+ assert.equal(await legacy.evaluate(()=>eval('equipped').shield),equipIds.shield);
+ await legacy.locator('#invTabs button').filter({hasText:'インベントリ'}).click();
+ assert.ok((await legacy.locator('#invBody .equipPanel').innerText()).includes('盾：盾'));
+
+ const ironIndex=await slotIndex(equipIds.iron);
+ assert.ok(ironIndex>=0&&ironIndex<27);
+ await legacy.locator('#invBody .playerInvGrid .slot').nth(ironIndex).click();
+ assert.equal(await legacy.evaluate(id=>eval('invCount')[id],equipIds.iron),equipIds.ironCount-1);
+ assert.deepEqual(await legacy.evaluate(()=>Array.from(eval('craftSlots'))),
+  [equipIds.iron,null,null,null]);
+ await legacy.locator('#invBody .craft2 .slot').first().click();
+ assert.equal(await legacy.evaluate(id=>eval('invCount')[id],equipIds.iron),equipIds.ironCount);
+ assert.deepEqual(await legacy.evaluate(()=>Array.from(eval('craftSlots'))),
+  [null,null,null,null]);
+ await legacy.keyboard.press('e');
+ await legacy.waitForFunction(()=>document.getElementById('inv').style.display==='none');
+
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
  assert.equal(normalized.invCount[101],5);
