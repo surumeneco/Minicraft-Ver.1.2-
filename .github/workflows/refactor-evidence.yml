@@ -1,0 +1,24 @@
+name: Refactor change-set preflight
+on:
+  pull_request:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  refactor-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate diff evidence and pre-change refactor baseline
+        env:
+          CAT_DIFF_BASE: ${{ github.event.pull_request.base.sha }}
+          CAT_PR_TITLE: ${{ github.event.pull_request.title }}
+        run: node scripts/refactor-change-evidence.mjs

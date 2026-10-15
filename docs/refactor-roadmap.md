@@ -369,3 +369,9 @@
 - 実`rsTick()`と実`outAt/cpow`を連結したVM検証に4件追加：コンパレーターの前tick出力・電源遮断後の遅延反映、オブザーバーの前方ブロック変更検知と背面パルス、ホッパーの4tick周期、ピストンの電源ON/OFF通知。
 - テストは実回路ステージと状態遷移を通すが、実`hopperStep`や`pistonTick`等の物理ブロック移動はイベントとして記録する。複雑な長周期クロック、実ブロック編集・描画・実Mobの副作用をカバーしたとは扱わない。
 - この変更はテストと文書のみ。生産コード、ゲーム仕様、保存形式は変更しない。
+
+## 2026-10-15：CAT-TDDへの接続準備・refactor事前Greenゲート
+
+- `scripts/refactor-change-evidence.mjs` / `.github/workflows/refactor-evidence.yml`：`develop`宛PRのproduction差分には、テストと挙動・スコープ記録を必須とする。`refactor:`のproduction PRでは、新しいテスト一式をbase時点の旧実装で走らせる **pre-change Green** を追加する。BugfixのRedを不当に拒否しない。
+- `tests/refactor-change-evidence.test.mjs`：diff分類、テスト欠損、文書欠損、refactor baseline、bugfix、doc/test-onlyの選別を6件で固定する。
+- [CAT-TDD正本](https://github.com/surumeneco/CAT-TDD)の正式3 Gateは、Work・confirmed仕様・TestModelの成果物と独立実行証拠が未準備のため **not-run**。Green CIをCAT適合passへ昇格させない。詳細は `docs/cat-tdd-integration.md`。
