@@ -322,9 +322,6 @@ try{
   for(const [x,y,z]of cells.slice(0,2))setB(x,y,z,3);
   window.__breakCells=cells.slice(0,2);
   window.__heldEvents=[];
-  window.__repeatCallbacks=0;
-  const originalRepeat=repeatHeldBlockBreak;
-  repeatHeldBlockBreak=function(){window.__repeatCallbacks++;return originalRepeat()};
   window.addEventListener('mousedown',e=>window.__heldEvents.push({trusted:e.isTrusted,button:e.button,aim:eval('target')?.z,source:e.target?.constructor?.name}));
   return window.__breakCells;
  });
@@ -333,13 +330,21 @@ try{
   return !!t&&t.x===p[0]&&t.y===p[1]&&t.z===p[2];
  },{timeout:6000});
  await legacy.mouse.down({button:'left'});
- await legacy.waitForTimeout(1500);
+ // Wait for the actual repeated world mutation, not an assumed wall-clock
+ // interval: software WebGL under CI can delay timers appreciably.
+ let timedOut=false;
+ try{
+  await legacy.waitForFunction(
+   ()=>window.__breakCells.every(([x,y,z])=>getB(x,y,z)===0),
+   null,{timeout:10000}
+  );
+ }catch{timedOut=true}
  const breakResult=await legacy.evaluate(()=>({
   cells:window.__breakCells.map(([x,y,z])=>[x,y,z,getB(x,y,z)]),
   target:eval('target'),
   held:eval('leftBreakHeld'),
   timer:eval('leftBreakTimer'),locked:eval('locked'),fallback:eval('fallback'),
-  events:window.__heldEvents,callbacks:window.__repeatCallbacks,mobHit:!!pickMob(),
+  events:window.__heldEvents,mobHit:!!pickMob(),
   display:document.getElementById('msg').style.display,
   gamePaused:eval('pauseMenuOpen'),inventory:eval('inv')
  }));
@@ -347,7 +352,9 @@ try{
  await legacy.evaluate(()=>clearInterval(window.__holdAimPin));
  await legacy.waitForFunction(()=>eval('leftBreakHeld')===false&&eval('leftBreakTimer')===0);
  console.log('Repeated break debug:',JSON.stringify(breakResult));
+ assert.equal(timedOut,false,'long-press world mutation did not finish within 10s');
  assert.ok(breakResult.cells.every(c=>c[3]===0),'both actual world blocks must be removed by held mouse');
+ assert.ok(breakResult.events.some(e=>e.trusted===false&&e.button===0),'synthetic repeated mousedown must be observed');
  console.log('Held block break removed two camera-targeted blocks:',placedBreakBlocks);
 
  await legacy.evaluate(()=>save(false));
