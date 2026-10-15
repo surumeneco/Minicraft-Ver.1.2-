@@ -695,7 +695,8 @@ try{
   setB(hx,y,hz,eval('HOPPER'));
   const hopper=eval('RS').get(rkey(hx,y,hz));
   eval('rsAcc=0');
-  advanceCircuitClock(.5);
+  // .8s gives >.3s remaining after the three-tick cap, so backlog is discarded.
+  advanceCircuitClock(.8);
   const cappedHopperTicks=hopper.ht,remaining=eval('rsAcc');
   advanceCircuitClock(.1);
   const fourthTick=hopper.ht;
