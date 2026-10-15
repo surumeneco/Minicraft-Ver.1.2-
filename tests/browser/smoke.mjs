@@ -297,6 +297,15 @@ try{
  // with two adjacent blocks in the player's high-altitude line of sight.
  const placedBreakBlocks=await legacy.evaluate(()=>{
   if(eval('mobs').includes(window.__combatTestMob))rmMob(window.__combatTestMob);
+  // Pin the avatar's aim while testing repeated hits: pointer-lock move events
+  // and residual physics should not move the ray away from the second block.
+  const player=eval('P');
+  window.__holdAimPin=setInterval(()=>{
+   player.x=40.5;player.y=70;player.z=40.5;
+   player.vx=0;player.vy=0;player.vz=0;
+   player.yaw=0;player.pitch=0;
+  },10);
+  player.x=40.5;player.y=70;player.z=40.5;player.yaw=0;player.pitch=0;
   const o=eval('cam').position,d=new THREE.Vector3(0,0,-1).applyEuler(eval('cam').rotation);
   const cells=[2.3,3.3,4.3].map(t=>[
    Math.floor(o.x+d.x*t),Math.floor(o.y+d.y*t),Math.floor(o.z+d.z*t)
@@ -319,6 +328,7 @@ try{
   timer:eval('leftBreakTimer'),locked:eval('locked'),fallback:eval('fallback')
  }));
  await legacy.mouse.up({button:'left'});
+ await legacy.evaluate(()=>clearInterval(window.__holdAimPin));
  await legacy.waitForFunction(()=>eval('leftBreakHeld')===false&&eval('leftBreakTimer')===0);
  console.log('Repeated break debug:',JSON.stringify(breakResult));
  assert.ok(breakResult.cells.every(c=>c[3]===0),'both actual world blocks must be removed by held mouse');
