@@ -609,6 +609,66 @@ try{
  assert.ok(blastResult.mobHp<blastResult.beforeHp,'Mob must receive actual blast damage');
  console.log('Real fuse/terrain/chest/Mob explosion:',blastResult);
 
+ // Use the real inventory UI to equip chest armor. The actual hurt() path
+ // must apply the same mitigation displayed by calculateArmoredDamage().
+ const armorId=await legacy.evaluate(()=>{const id=eval('I').ironChest;give(id,1);return id});
+ await legacy.keyboard.press('e');
+ await legacy.waitForFunction(()=>document.getElementById('inv').style.display==='flex');
+ await legacy.locator('#invTabs button').filter({hasText:'インベントリ'}).click();
+ const armorSlot=await slotIndex(armorId);
+ assert.ok(armorSlot>=0,'crafted armor must appear in owned inventory slots');
+ await legacy.locator('#invBody .playerInvGrid .slot').nth(armorSlot).click();
+ assert.equal(await legacy.evaluate(()=>eval('equipped').chest),armorId);
+ await legacy.keyboard.press('e');
+ await legacy.waitForFunction(()=>document.getElementById('inv').style.display==='none');
+ const armorResult=await legacy.evaluate(()=>{
+  eval('hp=20');
+  const applied=calculateArmoredDamage(10);
+  hurt(10);
+  const remaining=eval('hp');
+  eval('hp=20');updateHp();
+  return {applied,remaining};
+ });
+ assert.equal(armorResult.applied,9);
+ assert.equal(armorResult.remaining,11,'real hurt() must apply equipped chest-armor mitigation');
+
+ // Shift shielding must block hostile melee from the front. The same real
+ // zombie attack must damage the player after releasing Shift.
+ await legacy.evaluate(()=>{
+  const p=eval('P');p.x=40.5;p.y=70;p.z=40.5;p.yaw=0;p.pitch=0;
+  p.vx=0;p.vy=0;p.vz=0;
+  setB(40,69,40,3);
+  eval('flying=false');
+  addMob('zombie',40.5,70,39.6);
+  window.__defenseZombie=eval('mobs').at(-1);
+  eval('hp=20');updateHp();
+ });
+ await legacy.keyboard.down('Shift');
+ await legacy.waitForFunction(()=>eval('shieldUp')===true,null,{timeout:12000});
+ const blocked=await legacy.evaluate(()=>{
+  const m=window.__defenseZombie,p=eval('P');
+  m.x=p.x;m.y=p.y;m.z=p.z-.9;m.atk=0;
+  chooseMobSpeed(m,.1,p.x-m.x,p.z-m.z,.9);
+  return {hp:eval('hp'),flash:eval('shieldFlash'),shieldUp:eval('shieldUp')};
+ });
+ assert.equal(blocked.hp,20,'shield must negate front-facing zombie melee damage');
+ assert.ok(blocked.flash>0,'blocked melee must trigger shield flash');
+ await legacy.keyboard.up('Shift');
+ await legacy.waitForFunction(()=>eval('shieldUp')===false,null,{timeout:12000});
+ const unblocked=await legacy.evaluate(()=>{
+  const m=window.__defenseZombie,p=eval('P');
+  m.x=p.x;m.y=p.y;m.z=p.z-.9;m.atk=0;
+  const previous=eval('hp'),expected=calculateArmoredDamage(3);
+  chooseMobSpeed(m,.1,p.x-m.x,p.z-m.z,.9);
+  const result={previous,after:eval('hp'),expected};
+  rmMob(m);setB(40,69,40,0);
+  eval('flying=true');
+  return result;
+ });
+ assert.equal(unblocked.after,unblocked.previous-unblocked.expected,
+  'releasing shield must restore real hostile melee damage after armor mitigation');
+ console.log('Actual armor and Shift shield defense:',{armorResult,blocked,unblocked});
+
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
  assert.equal(normalized.invCount[101],5);
