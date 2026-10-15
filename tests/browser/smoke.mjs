@@ -283,15 +283,80 @@ try{
   addMob('cow',mobX,mobY,mobZ);
   const m=eval('mobs').at(-1);
   window.__combatTestMob=m;
+  // Keep this test target on the active camera ray until the real click.
+  // Mob AI/physics are tested separately and must not race the input test.
+  window.__pinCombatMob=setInterval(()=>{
+   const o=eval('cam').position,d=eval('rdir');
+   m.x=o.x+d.x*2;m.y=o.y+d.y*2-m.T.h/2;m.z=o.z+d.z*2;
+   m.vy=0;m.kx=0;m.kz=0;
+  },10);
   return {hp:m.hp,hit:!!pickMob()};
  });
  assert.equal(mobBefore.hit,true,'real camera ray must identify seeded mob');
  await legacy.mouse.click(640,400,{button:'left'});
+ await legacy.evaluate(()=>clearInterval(window.__pinCombatMob));
  const mobAfter=await legacy.evaluate(()=>({
   before:window.__combatTestMob.hp,alive:eval('mobs').includes(window.__combatTestMob)
  }));
  assert.equal(mobAfter.alive,true);
  assert.equal(mobAfter.before,mobBefore.hp-5,'actual browser mouse click must deal unarmed melee damage');
+
+ // Exercise the real world ray -> mousedown -> 180ms synthetic repeat path
+ // with two adjacent blocks in the player's high-altitude line of sight.
+ const placedBreakBlocks=await legacy.evaluate(()=>{
+  if(eval('mobs').includes(window.__combatTestMob))rmMob(window.__combatTestMob);
+  // Pin the avatar's aim while testing repeated hits: pointer-lock move events
+  // and residual physics should not move the ray away from the second block.
+  const player=eval('P');
+  window.__holdAimPin=setInterval(()=>{
+   player.x=40.5;player.y=70;player.z=40.5;
+   player.vx=0;player.vy=0;player.vz=0;
+   player.yaw=0;player.pitch=0;
+  },10);
+  player.x=40.5;player.y=70;player.z=40.5;player.yaw=0;player.pitch=0;
+  // Synchronize the live camera with the test pose without waiting for a GPU frame.
+  updatePlayerCamera();
+  const o=eval('cam').position,d=new THREE.Vector3(0,0,-1).applyEuler(eval('cam').rotation);
+  const cells=[2.3,3.3,4.3].map(t=>[
+   Math.floor(o.x+d.x*t),Math.floor(o.y+d.y*t),Math.floor(o.z+d.z*t)
+  ]).filter((v,i,all)=>i===0||v.some((n,k)=>n!==all[i-1][k]));
+  if(cells.length<2)throw Error('camera cells are not distinct');
+  for(const [x,y,z]of cells.slice(0,2))setB(x,y,z,3);
+  window.__breakCells=cells.slice(0,2);
+  window.__heldEvents=[];
+  window.addEventListener('mousedown',e=>window.__heldEvents.push({trusted:e.isTrusted,button:e.button,aim:eval('target')?.z,source:e.target?.constructor?.name}));
+  // Seed production raycast synchronously; SwiftShader can delay the next frame.
+  const t=eval('target=ray()'),p=window.__breakCells[0];
+  if(!t||t.x!==p[0]||t.y!==p[1]||t.z!==p[2])throw Error('first block not on camera ray');
+  return window.__breakCells;
+ });
+ await legacy.mouse.down({button:'left'});
+ // Wait for the actual repeated world mutation, not an assumed wall-clock
+ // interval: software WebGL under CI can delay timers appreciably.
+ let timedOut=false;
+ try{
+  await legacy.waitForFunction(
+   ()=>window.__breakCells.every(([x,y,z])=>getB(x,y,z)===0),
+   null,{timeout:10000}
+  );
+ }catch{timedOut=true}
+ const breakResult=await legacy.evaluate(()=>({
+  cells:window.__breakCells.map(([x,y,z])=>[x,y,z,getB(x,y,z)]),
+  target:eval('target'),
+  held:eval('leftBreakHeld'),
+  timer:eval('leftBreakTimer'),locked:eval('locked'),fallback:eval('fallback'),
+  events:window.__heldEvents,mobHit:!!pickMob(),
+  display:document.getElementById('msg').style.display,
+  gamePaused:eval('pauseMenuOpen'),inventory:eval('inv')
+ }));
+ await legacy.mouse.up({button:'left'});
+ await legacy.evaluate(()=>clearInterval(window.__holdAimPin));
+ await legacy.waitForFunction(()=>eval('leftBreakHeld')===false&&eval('leftBreakTimer')===0);
+ console.log('Repeated break debug:',JSON.stringify(breakResult));
+ assert.equal(timedOut,false,'long-press world mutation did not finish within 10s');
+ assert.ok(breakResult.cells.every(c=>c[3]===0),'both actual world blocks must be removed by held mouse');
+ assert.ok(breakResult.events.some(e=>e.trusted===false&&e.button===0),'synthetic repeated mousedown must be observed');
+ console.log('Held block break removed two camera-targeted blocks:',placedBreakBlocks);
 
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
