@@ -212,6 +212,27 @@ try{
  assert.equal(await legacy.evaluate(id=>eval('invCount')[id],equipIds.iron),equipIds.ironCount);
  assert.deepEqual(await legacy.evaluate(()=>Array.from(eval('craftSlots'))),
   [null,null,null,null]);
+
+ // Complete a real, single-ingredient recipe through the rendered output slot.
+ const recipe=await legacy.evaluate(()=>{
+  const ingredient=eval('I').redstone,output=eval('RED_DUST');
+  give(ingredient,1);
+  return {ingredient,output,inputCount:eval('invCount')[ingredient],
+   outputCount:eval('invCount')[output]||0};
+ });
+ await legacy.locator('#invTabs button').filter({hasText:'インベントリ'}).click();
+ const redstoneIndex=await slotIndex(recipe.ingredient);
+ assert.ok(redstoneIndex>=0&&redstoneIndex<27);
+ await legacy.locator('#invBody .playerInvGrid .slot').nth(redstoneIndex).click();
+ assert.equal(await legacy.evaluate(id=>eval('invCount')[id],recipe.ingredient),recipe.inputCount-1);
+ assert.deepEqual(await legacy.evaluate(()=>Array.from(eval('craftSlots'))),
+  [recipe.ingredient,null,null,null]);
+ assert.ok((await legacy.locator('#invBody .craftOut').innerText()).includes('レッドストーンダスト'));
+ await legacy.locator('#invBody .craftOut .slot').click();
+ assert.deepEqual(await legacy.evaluate(()=>Array.from(eval('craftSlots'))),
+  [null,null,null,null]);
+ assert.equal(await legacy.evaluate(id=>eval('invCount')[id],recipe.output),recipe.outputCount+1);
+
  await legacy.keyboard.press('e');
  await legacy.waitForFunction(()=>document.getElementById('inv').style.display==='none');
 
