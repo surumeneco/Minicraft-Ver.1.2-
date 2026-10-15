@@ -236,6 +236,42 @@ try{
  await legacy.keyboard.press('e');
  await legacy.waitForFunction(()=>document.getElementById('inv').style.display==='none');
 
+ // Browser-level held input: actual mouse down/up must arm and release repeat
+ // timers even when the camera ray has no breakable block.
+ await legacy.mouse.move(640,400);
+ await legacy.mouse.down({button:'left'});
+ await legacy.waitForFunction(()=>eval('leftBreakHeld')===true,{timeout:3000});
+ await legacy.waitForTimeout(235);
+ await legacy.mouse.up({button:'left'});
+ await legacy.waitForFunction(()=>eval('leftBreakHeld')===false&&eval('leftBreakTimer')===0);
+ await legacy.mouse.down({button:'right'});
+ await legacy.waitForFunction(()=>eval('rightPlaceHeld')===true,{timeout:3000});
+ await legacy.mouse.up({button:'right'});
+ await legacy.waitForFunction(()=>eval('rightPlaceHeld')===false&&eval('rightPlaceTimer')===0);
+
+ // Place a genuine Three.js mob on the player's unobstructed forward ray
+ // and deliver an actual Chromium mouse click through the game's handler.
+ await legacy.evaluate(()=>{
+  const P0=eval('P');P0.x=40.5;P0.y=70;P0.z=40.5;P0.pitch=0;P0.yaw=0;
+  eval('flying=true');
+ });
+ await legacy.waitForTimeout(130);
+ const mobBefore=await legacy.evaluate(()=>{
+  const o=eval('cam').position,dir=eval('rdir');
+  const mobX=o.x+dir.x*2,mobY=o.y+dir.y*2-.65,mobZ=o.z+dir.z*2;
+  addMob('cow',mobX,mobY,mobZ);
+  const m=eval('mobs').at(-1);
+  window.__combatTestMob=m;
+  return {hp:m.hp,hit:!!pickMob()};
+ });
+ assert.equal(mobBefore.hit,true,'real camera ray must identify seeded mob');
+ await legacy.mouse.click(640,400,{button:'left'});
+ const mobAfter=await legacy.evaluate(()=>({
+  before:window.__combatTestMob.hp,alive:eval('mobs').includes(window.__combatTestMob)
+ }));
+ assert.equal(mobAfter.alive,true);
+ assert.equal(mobAfter.before,mobBefore.hp-5,'actual browser mouse click must deal unarmed melee damage');
+
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
  assert.equal(normalized.invCount[101],5);
