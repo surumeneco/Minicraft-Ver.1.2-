@@ -498,6 +498,67 @@ try{
  assert.equal(realCircuit.comparatorShutdownDone.lamp,0);
  console.log('Live chunk/block redstone circuit integration:',realCircuit);
 
+ // Production piston blocks, animation object, and committed chunk updates.
+ const livePiston=await legacy.evaluate(()=>{
+  const x=48,y=71,z=36;
+  setB(x,y,z,eval('PISTON')|(1<<8)); // D4[1] extends +X
+  setB(x+1,y,z,3);
+  setB(x+2,y,z,0);
+  setB(x-1,y,z,eval('RBLK'));
+  const beforeAnim=eval('anims').length;
+  rsTick();
+  const queued=eval('anims').length-beforeAnim;
+  animTick(.15);
+  const extended={piston:getB(x,y,z)>>8,head:getB(x+1,y,z)&255,
+   moved:getB(x+2,y,z)};
+  setB(x-1,y,z,0);
+  rsTick();animTick(.15);
+  const retracted={piston:getB(x,y,z)>>8,head:getB(x+1,y,z),moved:getB(x+2,y,z)};
+  for(let n=-1;n<=2;n++)setB(x+n,y,z,0);
+  return {queued,extended,retracted,headId:eval('PHEAD')};
+ });
+ assert.equal(livePiston.queued,1,'real piston must queue one extension animation');
+ assert.deepEqual(livePiston.extended,{piston:9,head:livePiston.headId,moved:3});
+ assert.deepEqual(livePiston.retracted,{piston:1,head:0,moved:3});
+
+ // The real hopper should pull one item from a chest above on its fourth tick
+ // and push that item to a chest below on its eighth tick.
+ const liveHopper=await legacy.evaluate(()=>{
+  const x=49,y=70,z=42,rk0=eval('rk');
+  setB(x,y-1,z,eval('CHEST'));
+  setB(x,y,z,eval('HOPPER'));
+  setB(x,y+1,z,eval('CHEST'));
+  const upper=contAt(x,y+1,z),mid=contAt(x,y,z),lower=contAt(x,y-1,z);
+  const id=eval('I').iron;
+  upper[0]=[id,1];
+  for(let i=0;i<4;i++)rsTick();
+  const afterPull={upper:upper[0],hopper:mid[0],lower:lower[0]};
+  for(let i=0;i<4;i++)rsTick();
+  const afterPush={upper:upper[0],hopper:mid[0],lower:lower[0]};
+  for(let yy=y-1;yy<=y+1;yy++){setB(x,yy,z,0);delete eval('chests')[rk0(x,yy,z)]}
+  return {id,afterPull,afterPush};
+ });
+ assert.deepEqual(liveHopper.afterPull,{upper:null,hopper:[liveHopper.id,1],lower:null});
+ assert.deepEqual(liveHopper.afterPush,{upper:null,hopper:null,lower:[liveHopper.id,1]});
+
+ // Powered TNT must physically disappear and create a primed Three.js visual,
+ // while the timer/explosion itself is left to separately scoped tests.
+ const liveTnt=await legacy.evaluate(()=>{
+  const x=52,y=71,z=44,before=eval('primed').length;
+  setB(x,y,z,eval('TNTB'));
+  setB(x-1,y,z,eval('RBLK'));
+  rsTick();
+  const created=eval('primed').slice(before);
+  const r={air:getB(x,y,z),created:created.length,visual:!!created[0]?.g,
+   fuse:created[0]?.t};
+  for(const p of created)eval('scene').remove(p.g);
+  eval('primed').splice(before);
+  setB(x-1,y,z,0);
+  return r;
+ });
+ assert.deepEqual(liveTnt,{air:0,created:1,visual:true,fuse:4});
+ console.log('Live circuit mechanisms:',{livePiston,liveHopper,liveTnt});
+
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
  assert.equal(normalized.invCount[101],5);
