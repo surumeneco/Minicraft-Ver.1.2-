@@ -200,7 +200,7 @@ try{
  await legacy.locator('#invBody .playerInvGrid .slot').nth(shieldIndex).click();
  assert.equal(await legacy.evaluate(()=>eval('equipped').shield),equipIds.shield);
  await legacy.locator('#invTabs button').filter({hasText:'インベントリ'}).click();
- assert.ok((await legacy.locator('#invBody .equipPanel').innerText()).includes('盾：盾'));
+ assert.ok((await legacy.locator('#invBody .equipPanel').innerText()).includes('盾（Shiftで構える）：盾'));
 
  const ironIndex=await slotIndex(equipIds.iron);
  assert.ok(ironIndex>=0&&ironIndex<27);
