@@ -167,7 +167,7 @@ function collectCircuitSignalSources(list){
 
 }
 function rsTick(){const list=[];
- RS.forEach((c,k)=>{if(Math.abs(c.x-P.x)>56||Math.abs(c.z-P.z)>56)return;const v=getB(c.x,c.y,c.z);if(!RSB.has(v&255)){RS.delete(k);return}c.v=v;c.bs=v&255;c.s=v>>8;list.push(c)});
+ RS.forEach((c,k)=>{if(Math.abs(c.x-P.x)>56||Math.abs(c.z-P.z)>56)return;const v=getB(c.x,c.y,c.z),base=blockBaseId(v);if(!RSB.has(base)){RS.delete(k);return}c.v=v;c.bs=base;c.s=blockState(v);list.push(c)});
  collectCircuitSignalSources(list);
  const dust=list.filter(c=>c.bs===RED_DUST),nd=new Map();for(const c of dust)nd.set(rk(c.x,c.y,c.z),EM.get(rk(c.x,c.y,c.z))||0);
  spreadDustLevels(dust,nd);

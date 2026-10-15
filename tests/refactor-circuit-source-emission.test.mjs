@@ -21,6 +21,7 @@ function fixture(){
  const rk=(x,y,z)=>x+','+y+','+z;
  const ctx={
   ...ids,RS,RSB:new Set(Object.values(ids)),P:{x:0,z:0},rk,
+  blockBaseId:v=>v&255,blockState:v=>v>>8,
   getB:(x,y,z)=>blocks.get(rk(x,y,z))||0,
   D6:[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],
   D4:[[0,0,1],[1,0,0],[0,0,-1],[-1,0,0]],

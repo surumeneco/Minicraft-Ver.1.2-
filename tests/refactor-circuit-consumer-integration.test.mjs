@@ -22,6 +22,7 @@ function harness(){
   D4:[[0,0,1],[1,0,0],[0,0,-1],[-1,0,0]],
   D6:[[0,0,1],[1,0,0],[0,0,-1],[-1,0,0],[0,1,0],[0,-1,0]],
   RSB:new Set(Object.values(ids)),RS:registry,P:{x:0,y:100,z:0},mobs:[],
+  blockBaseId:v=>v&255,blockState:v=>v>>8,
   chests:{},CONTB:new Map(),getB,contLevel:()=>-1,
   EM:new Map(),DL:new Map(),circuitOn:false,
   applyChanges:ch=>{events.push(['apply',JSON.parse(JSON.stringify(ch))]);for(const[x,y,z,v]of ch)blocks.set(rk(x,y,z),v)},
@@ -147,4 +148,13 @@ test('piston receives continuous power and deactivation in per-tick mechanism ph
  f.blocks.set(f.rk(0,10,0),0);
  f.run();
  assert.deepEqual(f.events.filter(e=>e[0]==='piston').at(-1),['piston',1,false]);
+});
+
+test('high-byte state never confuses redstone registration with another base ID',()=>{
+ const f=harness();
+ const rep=f.put(ids.REPEATER,1,10,0,17);
+ f.run();
+ assert.equal(rep.bs,ids.REPEATER);
+ assert.equal(rep.s,17);
+ assert.equal(f.state(1,10,0),17);
 });
