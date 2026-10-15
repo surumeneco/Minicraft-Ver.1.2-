@@ -322,6 +322,9 @@ try{
   for(const [x,y,z]of cells.slice(0,2))setB(x,y,z,3);
   window.__breakCells=cells.slice(0,2);
   window.__heldEvents=[];
+  window.__repeatCallbacks=0;
+  const originalRepeat=repeatHeldBlockBreak;
+  repeatHeldBlockBreak=function(){window.__repeatCallbacks++;return originalRepeat()};
   window.addEventListener('mousedown',e=>window.__heldEvents.push({trusted:e.isTrusted,button:e.button,aim:eval('target')?.z,source:e.target?.constructor?.name}));
   return window.__breakCells;
  });
@@ -330,13 +333,14 @@ try{
   return !!t&&t.x===p[0]&&t.y===p[1]&&t.z===p[2];
  },{timeout:6000});
  await legacy.mouse.down({button:'left'});
- await legacy.waitForTimeout(700);
+ await legacy.waitForTimeout(1500);
  const breakResult=await legacy.evaluate(()=>({
   cells:window.__breakCells.map(([x,y,z])=>[x,y,z,getB(x,y,z)]),
   target:eval('target'),
   held:eval('leftBreakHeld'),
   timer:eval('leftBreakTimer'),locked:eval('locked'),fallback:eval('fallback'),
-  events:window.__heldEvents,display:document.getElementById('msg').style.display,
+  events:window.__heldEvents,callbacks:window.__repeatCallbacks,mobHit:!!pickMob(),
+  display:document.getElementById('msg').style.display,
   gamePaused:eval('pauseMenuOpen'),inventory:eval('inv')
  }));
  await legacy.mouse.up({button:'left'});
