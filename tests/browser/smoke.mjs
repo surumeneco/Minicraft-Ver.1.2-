@@ -314,6 +314,8 @@ try{
    player.yaw=0;player.pitch=0;
   },10);
   player.x=40.5;player.y=70;player.z=40.5;player.yaw=0;player.pitch=0;
+  // Synchronize the live camera with the test pose without waiting for a GPU frame.
+  updatePlayerCamera();
   const o=eval('cam').position,d=new THREE.Vector3(0,0,-1).applyEuler(eval('cam').rotation);
   const cells=[2.3,3.3,4.3].map(t=>[
    Math.floor(o.x+d.x*t),Math.floor(o.y+d.y*t),Math.floor(o.z+d.z*t)
@@ -323,12 +325,11 @@ try{
   window.__breakCells=cells.slice(0,2);
   window.__heldEvents=[];
   window.addEventListener('mousedown',e=>window.__heldEvents.push({trusted:e.isTrusted,button:e.button,aim:eval('target')?.z,source:e.target?.constructor?.name}));
+  // Seed production raycast synchronously; SwiftShader can delay the next frame.
+  const t=eval('target=ray()'),p=window.__breakCells[0];
+  if(!t||t.x!==p[0]||t.y!==p[1]||t.z!==p[2])throw Error('first block not on camera ray');
   return window.__breakCells;
  });
- await legacy.waitForFunction(()=>{
-  const t=eval('target'),p=window.__breakCells[0];
-  return !!t&&t.x===p[0]&&t.y===p[1]&&t.z===p[2];
- },{timeout:6000});
  await legacy.mouse.down({button:'left'});
  // Wait for the actual repeated world mutation, not an assumed wall-clock
  // interval: software WebGL under CI can delay timers appreciably.
