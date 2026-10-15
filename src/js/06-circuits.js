@@ -171,7 +171,9 @@ function rsTick(){const list=[];
  collectCircuitSignalSources(list);
  const dust=list.filter(c=>c.bs===RED_DUST),nd=new Map();for(const c of dust)nd.set(rk(c.x,c.y,c.z),EM.get(rk(c.x,c.y,c.z))||0);
  spreadDustLevels(dust,nd);
- DL=nd;const ch=[];
+ applyCircuitConsumers(list,nd)}
+// Keep dust state updates and powered device side effects in their original order.
+function applyCircuitConsumers(list,nd){DL=nd;const ch=[];
  for(const c of dust){const l=nd.get(rk(c.x,c.y,c.z));if(l!==c.s)ch.push([c.x,c.y,c.z,RED_DUST|(l<<8)])}
  for(const c of list){const x=c.x,y=c.y,z=c.z,s=c.s;
   switch(c.bs){
