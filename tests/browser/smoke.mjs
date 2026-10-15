@@ -76,6 +76,27 @@ try{
  await page.waitForFunction(()=>eval('fr')>=3,{timeout:20000});
  mkdirSync('artifacts',{recursive:true});
  await page.screenshot({path:'artifacts/minicraft-browser-smoke.png'});
+ // Read real rendered WebGL2 output, not only the canvas atlas or an available
+ // context. Rendering and readPixels run in the same JS task because
+ // preserveDrawingBuffer may be disabled by the renderer.
+ const fb=await page.evaluate(()=>{
+  const c=document.getElementById('c'),gl=c.getContext('webgl2');
+  eval('ren.render(scene,cam)');
+  const w=gl.drawingBufferWidth,h=gl.drawingBufferHeight;
+  const pixels=new Uint8Array(w*h*4);
+  gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+  let nonzeroAlpha=0,nonzeroColor=0;const rgb=new Set();
+  for(let i=0;i<pixels.length;i+=4){
+   if(pixels[i+3])nonzeroAlpha++;
+   if(pixels[i]||pixels[i+1]||pixels[i+2])nonzeroColor++;
+   if(i%2048===0)rgb.add(pixels[i]+','+pixels[i+1]+','+pixels[i+2]);
+  }
+  return {w,h,nonzeroAlpha,nonzeroColor,uniqueSamples:rgb.size};
+ });
+ assert.ok(fb.w>0&&fb.h>0,'framebuffer size must be nonzero');
+ assert.ok(fb.nonzeroAlpha>fb.w*fb.h/2,'GPU framebuffer was empty/transparent');
+ assert.ok(fb.nonzeroColor>fb.w*fb.h/2,'GPU framebuffer was all black');
+ console.log('Real GPU framebuffer readback:',fb);
 
  await page.keyboard.press('e');
  await page.waitForFunction(()=>document.getElementById('inv').style.display==='flex');
