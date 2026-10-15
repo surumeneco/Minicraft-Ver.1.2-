@@ -118,6 +118,10 @@ function stepMob(m,dt){const T=m.T,dx=P.x-m.x,dz=P.z-m.z,dist=Math.hypot(dx,dz);
  if(m.fuse>0){m.fuse-=dt;m.g.scale.setScalar(1+Math.sin(m.fuse*30)*.08);if(m.fuse<=0){explode(m);return}}
  advanceMobPhysics(m,dt,mv);
  if(m.y<1){rmMob(m);return}
+ updateMobPose(m,dt,mv)}
+// Presentation only: preserve the original walk-phase, leg order, position
+// and facing assignment after movement physics and all exit conditions.
+function updateMobPose(m,dt,mv){
  m.wp+=mv*dt*5;m.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(m.wp)*.8*((i==0||i==3)?1:-1):0);
  m.g.position.set(m.x,m.y,m.z);m.g.rotation.y=m.yaw}
 function pickMob(){const o=cam.position;let best=null;
