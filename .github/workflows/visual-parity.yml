@@ -8,6 +8,11 @@ on:
       - 'tests/browser/visual-parity.mjs'
       - '.github/workflows/visual-parity.yml'
   workflow_dispatch:
+    inputs:
+      base_sha:
+        description: 'Exact 40-character base commit SHA to compare'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -29,5 +34,5 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Compare base and head rendered WebGL samples
         env:
-          VISUAL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          VISUAL_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.base_sha }}
         run: node tests/browser/visual-parity.mjs
