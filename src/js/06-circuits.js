@@ -1,8 +1,8 @@
 // ================= レッドストーン回路エンジン（10Hz = 0.1秒/tick） =================
 const D6=[...D4,[0,1,0],[0,-1,0]];function rk(x,y,z){return x+','+y+','+z}
 let DL=new Map(),EM=new Map(),rsAcc=0;const primed=[],anims=[],fxs=[];
-function rsReg(x,y,z,old,nw){const k=rk(x,y,z);if(nw&&RSB.has(nw&255)){if(!RS.has(k))RS.set(k,{x,y,z})}else RS.delete(k)}
-function scanRS(){edits.forEach((m,k)=>{const cx=Math.floor(k/1024)-512,cz=k%1024-512;m.forEach((v,i)=>{if(v&&RSB.has(v&255)){const x=cx*16+(i&15),z=cz*16+((i>>4)&15),y=i>>8;RS.set(rk(x,y,z),{x,y,z})}})})}
+function rsReg(x,y,z,old,nw){const k=rk(x,y,z);if(nw&&RSB.has(blockBaseId(nw))){if(!RS.has(k))RS.set(k,{x,y,z})}else RS.delete(k)}
+function scanRS(){edits.forEach((m,k)=>{const cx=Math.floor(k/1024)-512,cz=k%1024-512;m.forEach((v,i)=>{if(v&&RSB.has(blockBaseId(v))){const x=cx*16+(i&15),z=cz*16+((i>>4)&15),y=i>>8;RS.set(rk(x,y,z),{x,y,z})}})})}
 // セーブ復元は必要な状態・関数の宣言後に行う。読み込み失敗時は新規ワールドで開始。
 loaded=load();
 for(let i=0;i<hot.length;i++)if(hot[i]===22)hot[i]=1;
