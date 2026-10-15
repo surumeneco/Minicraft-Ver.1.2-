@@ -19,7 +19,7 @@ function harness(){
  const rk=(x,y,z)=>x+','+y+','+z;
  const getB=(x,y,z)=>blocks.get(rk(x,y,z))||0;
  const ctx={...ids,Map,Math,rk,
-  D4:[[0,0,1],[1,0,0],[0,0,-1],[-1,0,0]],
+  D4:[[0,0,-1],[1,0,0],[0,0,1],[-1,0,0]],
   D6:[[0,0,1],[1,0,0],[0,0,-1],[-1,0,0],[0,1,0],[0,-1,0]],
   RSB:new Set(Object.values(ids)),RS:registry,P:{x:0,y:100,z:0},mobs:[],
   blockBaseId:v=>v&255,blockState:v=>v>>8,
