@@ -375,3 +375,9 @@
 - `scripts/refactor-change-evidence.mjs` / `.github/workflows/refactor-evidence.yml`：`develop`宛PRのproduction差分には、テストと挙動・スコープ記録を必須とする。`refactor:`のproduction PRでは、新しいテスト一式をbase時点の旧実装で走らせる **pre-change Green** を追加する。BugfixのRedを不当に拒否しない。
 - `tests/refactor-change-evidence.test.mjs`：diff分類、テスト欠損、文書欠損、refactor baseline、bugfix、doc/test-onlyの選別を6件で固定する。
 - [CAT-TDD正本](https://github.com/surumeneco/CAT-TDD)の正式3 Gateは、Work・confirmed仕様・TestModelの成果物と独立実行証拠が未準備のため **not-run**。Green CIをCAT適合passへ昇格させない。詳細は `docs/cat-tdd-integration.md`。
+
+## 2026-10-15：回路登録走査のBlock ID/状態アクセス境界
+
+- `06-circuits.js` の`rsTick`登録走査で下位8bitのID抽出`v&255`と状態`v>>8`を共通`blockBaseId(v)`/`blockState(v)`呼出しへ統一した。符号付きビット演算の既存セーブエンコードは変更しない。
+- 変更前にVMの回路ハーネスへ同等アクセサを用意し、高位状態17のリピーターでも登録IDが変わらない回帰テストを追加。変更前CI #38661350206成功、実装後CI #38661397550成功。
+- この変更は`rsTick`の登録走査の範囲であり、全ファイルの直接ビット演算置換ではない。処理全体の置換を安全に完了したとは記録しない。
