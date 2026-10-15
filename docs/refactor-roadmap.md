@@ -1,10 +1,38 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `9ab9c7358fdee13cebc5c3921a4609ee2eaa08a7`（2026-10-15、PR #48統合後）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `6805e24edc0360d2d2e0f6ca35933857702069ba`（2026-10-15、PR #58統合後）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
 提出済みの `PR/` ブランチと `main` は変更しない。
+
+## 現在の状態（2026-10-15、PR #58統合後）
+
+- `develop` HEAD: `6805e24edc0360d2d2e0f6ca35933857702069ba`。Node.js回帰テスト **288件成功・0件失敗**（統合後Structural parity Run #38684895190）。
+- PR #50〜#58はいずれも`develop`へ統合済み。productionコード差分のあるPR #52、#56〜#58では、変更前Green、変更後Node/Chromium、baseとのGPU描画差分ゲートも成功。
+- 追加した描画差分CIは、同じGPU/ブラウザでbase/headを固定シーンに描画し、現時点では全画素SHA-256比較の強化をPR #59で進める。全種類のGPUや全シーンの同一性とは区別する。
+- `main`および以前の提出済み`PR/**`ブランチは変更していない。
+
+| PR | 対象・検証結果 |
+| --- | --- |
+| [#50](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/50) | TNTの実導火線終了→爆発→地形/チェスト/Mob副作用 |
+| [#51](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/51) | 実GUIの防具軽減・Shift盾・ゾンビ近接攻撃 |
+| [#52](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/52) | 回路登録と旧セーブ編集走査でBlock IDアクセサ共通化、4回帰テスト |
+| [#53](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/53) | 実回路1200tick + 120回のレバーON/OFF往復とフレームcatch-up制限 |
+| [#54](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/54) | base/headの固定WebGLシーン画素比較GitHub Actions導入 |
+| [#55](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/55) | ゾンビ長期追跡・被弾、死亡復活、敵Mob解放 |
+| [#56](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/56) | Mob歩行ポーズをAI/物理から分離、4回帰テストと全GPU差分検査 |
+| [#57](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/57) | 地形鉱石選択後の洞窟/溶岩上書き抽出、全ボクセルオラクル |
+| [#58](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/58) | チャンク内の草/花/バラ低木ジオメトリを分離、3回帰テストと実GPU差分検査 |
+
+### 未完了として区別する範囲
+
+- **実ユーザーの歴史的セーブとの互換確認**：`minicraft_v2`の合成レガシー形式は試験済み。実セーブファイルが入手できておらず、全実保存データに対する移行結果は検証できない。
+- **正式CAT-TDD 3 Gate**：自動pre-change Green・scope evidenceは導入済み。ただし正本のconfirmed仕様・Work・TestModel・Normative Authorityの承認証拠がなく、`process-closure` / `model-conformance` / `implementation-conformance` は `not-run`。スクリプト成功で代替しない。
+- **他の構造リファクタリング**：ワールド全域生成・描画材質・UI・リソースパックなどにはさらに内部責務の分割候補がある。すべてを抽出し終えたとは宣言しない。
+- **レンダリングの環境範囲**：固定した複数ブロックを含む実GPUシーンで比較できるが、全ハードウェア/全時間帯/全種類の地形やテクスチャを網羅するものではない。
+
+以下の「PR #48統合後」および以前の節は当時の履歴。最新判定には本節を優先する。
 
 ## 現在の状態（2026-10-15、PR #48統合後）
 
