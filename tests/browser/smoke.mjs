@@ -293,6 +293,29 @@ try{
  assert.equal(mobAfter.alive,true);
  assert.equal(mobAfter.before,mobBefore.hp-5,'actual browser mouse click must deal unarmed melee damage');
 
+ // Exercise the real world ray -> mousedown -> 180ms synthetic repeat path
+ // with two adjacent blocks in the player's high-altitude line of sight.
+ const placedBreakBlocks=await legacy.evaluate(()=>{
+  if(eval('mobs').includes(window.__combatTestMob))rmMob(window.__combatTestMob);
+  const o=eval('cam').position,d=new THREE.Vector3(0,0,-1).applyEuler(eval('cam').rotation);
+  const cells=[2.3,3.3,4.3].map(t=>[
+   Math.floor(o.x+d.x*t),Math.floor(o.y+d.y*t),Math.floor(o.z+d.z*t)
+  ]).filter((v,i,all)=>i===0||v.some((n,k)=>n!==all[i-1][k]));
+  if(cells.length<2)throw Error('camera cells are not distinct');
+  for(const [x,y,z]of cells.slice(0,2))setB(x,y,z,3);
+  window.__breakCells=cells.slice(0,2);
+  return window.__breakCells;
+ });
+ await legacy.waitForFunction(()=>{
+  const t=eval('target'),p=window.__breakCells[0];
+  return !!t&&t.x===p[0]&&t.y===p[1]&&t.z===p[2];
+ },{timeout:6000});
+ await legacy.mouse.down({button:'left'});
+ await legacy.waitForFunction(()=>window.__breakCells.every(([x,y,z])=>getB(x,y,z)===0),{timeout:4000});
+ await legacy.mouse.up({button:'left'});
+ await legacy.waitForFunction(()=>eval('leftBreakHeld')===false&&eval('leftBreakTimer')===0);
+ console.log('Held block break removed two camera-targeted blocks:',placedBreakBlocks);
+
  await legacy.evaluate(()=>save(false));
  const normalized=await legacy.evaluate(()=>JSON.parse(localStorage.getItem('minicraft_v2')));
  assert.equal(normalized.invCount[101],5);
