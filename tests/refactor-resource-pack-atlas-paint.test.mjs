@@ -29,7 +29,9 @@ function setup({badStorage=false}={}){
   1:{name:'stone',width:16,height:16},
   2:{name:'glass',width:64,height:64},
   3:{name:'grass_block_side',width:20,height:32},
-  4:{name:'grass_block_side_overlay',width:128,height:128}
+  4:{name:'grass_block_side_overlay',width:128,height:128},
+  5:{name:'oversized',width:512,height:512},
+  6:{name:'tiny',width:4,height:4}
  };
  const ctx={
   Uint8ClampedArray,Map,Blob,Math,JSON,
@@ -95,4 +97,22 @@ test('quota failure preserves visual update and reports existing fallback warnin
  assert.equal(await f.apply({stone:1}),1);
  assert.deepEqual(f.messages,['※容量の都合で、次回起動時は標準テクスチャに戻ります']);
  assert.equal(f.ctx.tex.needsUpdate,true);
+});
+
+test('atlas resolution follows shortest selected side with 16px floor and 128px ceiling',async()=>{
+ for(const [img,width] of [[1,16],[2,64],[3,20],[4,128],[5,128],[6,16]]){
+  const f=setup();
+  assert.equal(await f.apply({stone:img}),1);
+  assert.equal(f.ctx.ac.width,width*8,'atlas width for image '+img);
+  assert.equal(f.ctx.ac.height,width*8,'atlas height for image '+img);
+  assert.deepEqual(f.stored,[['pack',{n:4,d:'data:atlas:'+(width*8)+'x'+(width*8)}]]);
+ }
+});
+
+test('largest selected texture controls scale regardless of source map order',async()=>{
+ const f=setup();
+ await f.apply({stone:1,glass:3,grass_block_side:2});
+ assert.equal(f.ctx.ac.width,512);
+ assert.equal(f.ctx.ac.height,512);
+ assert.equal(f.events.filter(e=>e[0]==='draw'&&e[1]==='atlas').length,4);
 });

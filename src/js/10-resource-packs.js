@@ -186,11 +186,15 @@ async function decodePackImages(map){
  const bm={};for(const[k,v]of map){if(!FILES.has(k))continue;try{bm[k]=await createImageBitmap(new Blob([v],{type:'image/png'}))}catch(e){}}
  return bm;
 }
+function selectPackTileSize(hits){
+ let T=16;hits.forEach(h=>T=Math.max(T,Math.min(128,Math.min(h[1].width,h[1].height))));
+ return T;
+}
 async function applyPack(map){
  const bm=await decodePackImages(map);
  const hits=collectPackHits(bm);
  if(!hits.length)return 0;
- let T=16;hits.forEach(h=>T=Math.max(T,Math.min(128,Math.min(h[1].width,h[1].height))));
+ const T=selectPackTileSize(hits);
  const base=document.createElement('canvas');base.width=16*CO;base.height=16*RW;base.getContext('2d').putImageData(im,0,0);
  ac.width=T*CO;ac.height=T*RW;const g=ac.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(base,0,0,ac.width,ac.height);
  const tc=document.createElement('canvas');tc.width=tc.height=T;
