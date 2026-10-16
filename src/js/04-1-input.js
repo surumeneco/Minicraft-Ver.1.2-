@@ -57,17 +57,17 @@ addEventListener('mousedown',e=>{
  if(e.button==0){const mh=pickMob();if(mh&&(!target||mh.t<target.t)){attack(mh.m);return}}
  if(e.button==2){const hid=hot[sel];if(isItem(hid)&&ITEMS[hid]?.type==='food'){e.preventDefault();if((invCount[hid]||0)>0){foodRightHeld=true;clearTimeout(foodEatTimer);foodEatTimer=setTimeout(function eatHeldFood(){if(!foodRightHeld)return;const before=invCount[hid]||0;equip(hid);if(foodRightHeld&&(invCount[hid]||0)>0&&((hp<20)||(hunger<10)))foodEatTimer=setTimeout(eatHeldFood,1000);else foodRightHeld=false},1000)}return}if(hid===I.bucket||hid===I.waterBucket||hid===I.lavaBucket){bucketUse(hid);return}}
  if(!target)return;const{x,y,z,prev,hy}=target;
- if(e.button==0){if(getB(x,y,z)==10)return;let broken=getB(x,y,z);setB(x,y,z,0);if(broken>255&&AXB[broken&255])broken&=255;if(RSB.has(broken&255)||(broken&255)===CHEST)breakRS(x,y,z,broken);else if(broken&&broken<256){if(broken===RED_DUST)give(I.redstone,1);else if(broken===12||broken===13)give(I.iron,1);else if(broken===14)give(I.diamond,1);else give(broken,1);if(broken===5&&Math.random()<.10)spawnDrop(I.apple,1,x+.5,y+.7,z+.5)}}
- else if(e.button==2){const tv=getB(x,y,z);if(!(keys.ShiftLeft||keys.ShiftRight)){if(CONTB.has(tv&255)&&((tv&255)!==CHEST||tv>255)){openChest(x,y,z);return}if(rsUse(tv,x,y,z))return}
-  if((tv&255)===LEVER){const on=(tv>>8)!==1;setB(x,y,z,LEVER|(on?256:0));toast(on?'レバー ON':'レバー OFF');return}
-  if((tv&255)===STONE_BUTTON|| (tv&255)===PRESSURE){toast('レッドストーン信号を発生！');return}
-  if((tv>>8)>=13&&(tv>>8)<29){setB(x,y,z,(tv&255)|((13+((tv>>8)-13^4))<<8));return}
+ if(e.button==0){if(getB(x,y,z)==10)return;let broken=getB(x,y,z);setB(x,y,z,0);if(broken>255&&AXB[blockBaseId(broken)])broken=blockBaseId(broken);if(RSB.has(blockBaseId(broken))||(blockBaseId(broken))===CHEST)breakRS(x,y,z,broken);else if(broken&&broken<256){if(broken===RED_DUST)give(I.redstone,1);else if(broken===12||broken===13)give(I.iron,1);else if(broken===14)give(I.diamond,1);else give(broken,1);if(broken===5&&Math.random()<.10)spawnDrop(I.apple,1,x+.5,y+.7,z+.5)}}
+ else if(e.button==2){const tv=getB(x,y,z);if(!(keys.ShiftLeft||keys.ShiftRight)){if(CONTB.has(blockBaseId(tv))&&((blockBaseId(tv))!==CHEST||tv>255)){openChest(x,y,z);return}if(rsUse(tv,x,y,z))return}
+  if((blockBaseId(tv))===LEVER){const on=(blockState(tv))!==1;setB(x,y,z,LEVER|(on?256:0));toast(on?'レバー ON':'レバー OFF');return}
+  if((blockBaseId(tv))===STONE_BUTTON|| (blockBaseId(tv))===PRESSURE){toast('レッドストーン信号を発生！');return}
+  if((blockState(tv))>=13&&(blockState(tv))<29){setB(x,y,z,(blockBaseId(tv))|((13+((blockState(tv))-13^4))<<8));return}
   if(!prev)return;const[a,b,c]=prev;let id=hot[sel];if(isItem(id)){if(id===I.redstone){if(take(I.redstone,1))setB(a,b,c,RED_DUST);return}const bm={[I.rail]:RAIL,[I.poweredRail]:POWERED_RAIL,[I.detectorRail]:DETECTOR_RAIL,[I.activatorRail]:ACTIVATOR_RAIL};if(bm[id]&&take(id,1)){setB(a,b,c,bm[id]);return}toast(ITEMS[id].name+'はここには置けません');return}if(b<0||b>=H)return;
-  const base=id&255,sh=id>>8,dyn=b-y,half=dyn<0?1:dyn>0?0:(hy>.5?1:0),pf=((Math.round(-P.yaw/(Math.PI/2))%4)+4)%4;
+  const base=blockBaseId(id),sh=blockState(id),dyn=b-y,half=dyn<0?1:dyn>0?0:(hy>.5?1:0),pf=((Math.round(-P.yaw/(Math.PI/2))%4)+4)%4;
   if(base===CHEST&&sh===0)id=CHEST|((29+((pf+2)&3))<<8);else if(RSB.has(base)&&sh===0)id=rsPlace(base,pf,a,b,c,x,y,z);else if(AXB[base]&&sh===0)id=(a!==x)?base|(1<<8):(c!==z)?base|(2<<8):base;else if(sh>=1&&sh<=8)id=base|((1+pf+4*half)<<8);
-  else if(sh==9||sh==10){if((tv&255)==base&&((tv>>8)==9&&dyn>0||(tv>>8)==10&&dyn<0)){setB(x,y,z,base);return}id=base|((9+half)<<8)}
+  else if(sh==9||sh==10){if((blockBaseId(tv))==base&&((blockState(tv))==9&&dyn>0||(blockState(tv))==10&&dyn<0)){setB(x,y,z,base);return}id=base|((9+half)<<8)}
   else if(sh>=13)id=base|((13+pf+8*half)<<8);
-  if(solid(id)&&!NC[id&255]&&a<P.x+R&&a+1>P.x-R&&b<P.y+HT&&b+1>P.y&&c<P.z+R&&c+1>P.z-R)return;setB(a,b,c,id);if(id===SPG)spongeAbsorb(a,b,c)}});
+  if(solid(id)&&!NC[blockBaseId(id)]&&a<P.x+R&&a+1>P.x-R&&b<P.y+HT&&b+1>P.y&&c<P.z+R&&c+1>P.z-R)return;setB(a,b,c,id);if(id===SPG)spongeAbsorb(a,b,c)}});
 function releaseMouseInput(){foodRightHeld=false;clearTimeout(foodEatTimer);foodEatTimer=0;drag=false;rightPlaceHeld=false;clearInterval(rightPlaceTimer);rightPlaceTimer=0;leftBreakHeld=false;clearInterval(leftBreakTimer);leftBreakTimer=0}
 addEventListener('mouseup',releaseMouseInput);
 // 左ボタン長押し中は、狙っているブロックの破壊操作を一定間隔で繰り返す
