@@ -33,14 +33,14 @@ addEventListener('mousemove',e=>{if(!pauseMenuOpen&&(locked||(fallback&&drag))){
 addEventListener('contextmenu',e=>e.preventDefault());
 function hit(x,y,z,r=R,h=HT){const jy=Math.floor(y);
  for(let i=Math.floor(x-r);i<=Math.floor(x+r);i++)for(let j=jy-1;j<=Math.floor(y+h);j++)for(let k=Math.floor(z-r);k<=Math.floor(z+r);k++){
-  const v=getB(i,j,k);if(!solid(v)||NC[v&255])continue;
+  const v=getB(i,j,k);if(!solid(v)||NC[blockBaseId(v)])continue;
   if(v<256&&!THIN[v]){if(j>=jy)return true;continue}
   for(const b of boxes(v,i,j,k,false))if(x-r<i+b[3]&&x+r>i+b[0]&&y<j+b[4]&&y+h>j+b[1]&&z-r<k+b[5]&&z+r>k+b[2])return true}
  return false}
 function hitSwim(x,y,z){
  const r=.28,h=.72,base=y+.18,jy=Math.floor(base);
  for(let i=Math.floor(x-r);i<=Math.floor(x+r);i++)for(let j=jy-1;j<=Math.floor(base+h);j++)for(let k=Math.floor(z-r);k<=Math.floor(z+r);k++){
-  const v=getB(i,j,k);if(!solid(v)||NC[v&255])continue;
+  const v=getB(i,j,k);if(!solid(v)||NC[blockBaseId(v)])continue;
   if(v<256&&!THIN[v]){if(j>=jy)return true;continue}
   for(const b of boxes(v,i,j,k,false))if(x-r<i+b[3]&&x+r>i+b[0]&&base<j+b[4]&&base+h>j+b[1]&&z-r<k+b[5]&&z+r>k+b[2])return true
  }
@@ -86,7 +86,7 @@ addEventListener('mousedown',e=>{
 let rightPlaceHeld=false,rightPlaceTimer=0;
 function repeatHeldBlockPlacement(){
   if(pauseMenuOpen||!rightPlaceHeld||msg.style.display!=='none'||inv||!(locked||fallback)||!target)return;
-  const tv=getB(target.x,target.y,target.z)&255;
+  const tv=blockBaseId(getB(target.x,target.y,target.z));
   if(CONTB.has(tv)||tv===LEVER||tv===STONE_BUTTON||tv===PRESSURE||tv===RED_DUST||tv===REPEATER||tv===COMPARATOR||tv===OBSERVER||tv===DISPENSER||tv===DROPPER)return;
   const ev=new MouseEvent('mousedown',{button:2,bubbles:true,cancelable:true});dispatchEvent(ev);
  }
