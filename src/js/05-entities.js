@@ -209,9 +209,13 @@ function arrowTick(dt){
    arrows.splice(i,1);
    continue;
   }
-  a.g.position.set(a.x,a.y,a.z);
-  a.g.lookAt(a.x+a.vx,a.y+a.vy,a.z+a.vz);
+  updateArrowPose(a);
  }
+}
+// Update projectile-only geometry after physics and collision resolution.
+function updateArrowPose(a){
+ a.g.position.set(a.x,a.y,a.z);
+ a.g.lookAt(a.x+a.vx,a.y+a.vy,a.z+a.vz);
 }
 // ---- 雲（高度 y=100〜104・ゆっくり流れる） ----
 const CLD={cs:12,y:100,h:4,R:22,ci:1e9,cj:1e9,m:null,off:0},cloudMat=new THREE.MeshBasicMaterial({color:0xffffff,vertexColors:true,transparent:true,opacity:.9,fog:false,depthWrite:false});
