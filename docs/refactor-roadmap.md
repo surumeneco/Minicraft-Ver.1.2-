@@ -1,10 +1,31 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `6805e24edc0360d2d2e0f6ca35933857702069ba`（2026-10-15、PR #58統合後）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `623bc503c2653e27609070943b2155e534a15102`（2026-10-16、PR #62統合後）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
 提出済みの `PR/` ブランチと `main` は変更しない。
+
+## 現在の状態（2026-10-16、PR #62統合後）
+
+- `develop`: `623bc503c2653e27609070943b2155e534a15102`。統合後Node.js **295テスト成功・失敗0**（[Run #38845727284](https://github.com/surumeneco/Minicraft-Ver.1.2-/actions/runs/38845727284)）。PR #62の構造CI・実Chromium CI・リファクタ事前Green・GPU全フレームSHA-256比較の4チェックがGreen。
+- 本ラウンドでは、PR #59〜#62を`develop`へ統合。 `main`・既存の提出済み `PR/**` ブランチは変更していない。
+
+| PR | 実施範囲・変更前オラクル |
+| --- | --- |
+| [#59](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/59) | Chromium WebGL全フレームのRGBAをSHA-256比較、手動実行時の基準SHAを明示入力 |
+| [#60](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/60) | 弓矢の更新後位置・視線描画を`updateArrowPose`へ分離。旧コードで3件の描画/消滅回帰テスト成功 |
+| [#61](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/61) | TNT導火線の点滅表示を`updatePrimedTntFlash`へ分離。旧コードで2件の周期/爆発前順序テスト成功 |
+| [#62](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/62) | リソースパックのタイル解像度（16–128px）を`selectPackTileSize`へ分離。旧コードで2件の上限/下限/複数画像テスト成功 |
+
+### 検証範囲と外部前提の境界
+
+- **証明済み**：固定したWebGLシーンについて、同一Chromium/SwiftShader環境のPRベースと候補ソースの全RGBAフレームハッシュが等しい。差分を許容しないゲートだが、未描画ブロック・時刻・GPUを網羅しない。
+- **取得が必要**：ユーザーが過去に実際に保存した `minicraft_v2` データがなければ、実ファイルを使った互換試験の最終判断はできない。合成旧形式の読込/再保存は既に試験済み。
+- **正式CAT-TDD**：正本に基づくconfirmed仕様・Work・TestModelおよびNormative Authorityの証拠が揃っていないため、正式な3 Gateは **not-run** とする。通常CIの成功をCAT認定と同一視しない。
+- **追加リファクタリング**：コード全体の責務分解に絶対的な終点はない。さらに分割できる関数は残るが、全関数を無条件に細分化することは目的に含めない。以後も不変条件・テストの意義を明確にした単位で進める。
+
+以下の「PR #58統合後」およびそれ以前は作業時点の履歴として保存する。現行判定は本節を優先する。
 
 ## 現在の状態（2026-10-15、PR #58統合後）
 
