@@ -44,7 +44,7 @@ async function capture(port){
   await page.evaluate(()=>{if(document.pointerLockElement)document.exitPointerLock()});
   await page.locator('#closeGuide').click();
   await page.waitForFunction(()=>document.getElementById('msg').style.display==='none');
-  const data=await page.evaluate(()=>{
+  const data=await page.evaluate(async()=>{
    const p=eval('P');
    eval('flying=true');
    p.x=43.5;p.y=70.5;p.z=40.5;p.vx=0;p.vy=0;p.vz=0;p.yaw=0;p.pitch=-.42;
@@ -80,7 +80,11 @@ async function capture(port){
     const offset=4*(y*w+x),r=rgba[offset],g=rgba[offset+1],b=rgba[offset+2];
     samples.push(r,g,b);unique.add((r>>4)+','+(g>>4)+','+(b>>4));
    }
-   return {w,h,samples,unique:unique.size};
+   // SHA-256 covers every RGBA byte of the actual rendered framebuffer,
+   // not only the sampled visual-diff diagnostics.
+   const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',rgba));
+   const fullHash=Array.from(digest).map(n=>n.toString(16).padStart(2,'0')).join('');
+   return {w,h,samples,unique:unique.size,fullHash};
   });
   assert.deepEqual(errors,[],'real browser page had runtime errors');
   assert.ok(data.w>0&&data.h>0,'WebGL2 framebuffer must exist');
@@ -109,6 +113,9 @@ try{
  }
  console.log('Visual parity: sampled RGB pixels',pixels,'changed >10',changed,
   'worst channel difference',worst,'base colors',before.unique,'head colors',after.unique);
+ console.log('Full-frame GPU RGBA SHA-256:',before.fullHash,after.fullHash);
+ assert.equal(after.fullHash,before.fullHash,
+  'entire fixed GPU framebuffer must be bit-for-bit identical to PR base');
  assert.ok(changed<=Math.floor(pixels*.01),
   'production WebGL output deviated from the unchanged PR base at >1% of sampled positions');
 }finally{
