@@ -86,3 +86,31 @@ test('reverse iteration removes multiple detonated TNTs without skipping entitie
  assert.equal(f.visuals.length,2);
  assert.ok(f.visuals.every(v=>v.t===.05));
 });
+
+test('fuse flash switches from four to eight cycles per second below one second',()=>{
+ const f=fixture({primed:[
+  {x:2,y:8,z:2,t:1.12,vy:0},
+  {x:4,y:8,z:4,t:1.01,vy:0}
+ ]});
+ f.run(.1);
+ const slow=f.objects[0],fast=f.objects[1];
+ assert.ok(Math.abs(slow.t-1.02)<1e-12);
+ assert.ok(Math.abs(fast.t-.91)<1e-12);
+ assert.equal(slow.m.material,f.white);
+ assert.equal(slow.b.material,f.white);
+ assert.equal(fast.m.material,f.red);
+ assert.equal(fast.b.material,f.band);
+ assert.deepEqual(f.events.filter(e=>e[1]==='scale').map(e=>[e[0],e[2]]),
+  [['tnt1',1],['tnt0',1.06]],
+  'flashes must be sampled after decrement and TNT update order must be reversed');
+});
+
+test('primed fuse does not remove the entity before its final flash, position, and blast',()=>{
+ const f=fixture({primed:[{x:3,y:6,z:4,t:.025,vy:0}]});
+ f.run(.05);
+ assert.equal(f.ctx.primed.length,0);
+ assert.deepEqual(f.events.slice(0,4).map(e=>[e[0],e[1]]),[
+  ['tnt0','scale'],['tnt0','position'],['remove',f.objects[0].g],['blast',3]
+ ]);
+ assert.equal(f.visuals.length,1);
+});

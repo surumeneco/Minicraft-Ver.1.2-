@@ -123,9 +123,15 @@ function blast(cx,cy,cz){
  const g=new THREE.Mesh(FXG,new THREE.MeshBasicMaterial({color:0xfff2c0,transparent:true,opacity:.8}));g.position.set(cx,cy,cz);scene.add(g);fxs.push({g,t:0})}
 function primedTick(dt){updatePrimedTnt(dt);updateExplosionVisuals(dt)}
 function updatePrimedTnt(dt){for(let i=primed.length-1;i>=0;i--){const p=primed[i];p.t-=dt;
-  const fl=Math.floor(p.t*(p.t<1?8:4))%2===0;p.m.material=fl?tMatW:tMatR;p.b.material=fl?tMatW:tMatB;p.g.scale.setScalar(fl?1.06:1);
+  updatePrimedTntFlash(p);
   p.vy-=12*dt;const ny=p.y+p.vy*dt;if(p.vy<0&&solid(getB(Math.floor(p.x),Math.floor(ny),Math.floor(p.z)))){p.y=Math.floor(ny)+1;p.vy=0}else p.y=ny;
   p.g.position.set(p.x,p.y,p.z);if(p.t<=0){scene.remove(p.g);primed.splice(i,1);blast(p.x,p.y+.5,p.z)}}}
+// Presentation only. Flash is sampled after fuse decrement and before gravity.
+function updatePrimedTntFlash(p){
+ const fl=Math.floor(p.t*(p.t<1?8:4))%2===0;
+ p.m.material=fl?tMatW:tMatR;p.b.material=fl?tMatW:tMatB;
+ p.g.scale.setScalar(fl?1.06:1);
+}
 function updateExplosionVisuals(dt){for(let i=fxs.length-1;i>=0;i--){const f=fxs[i];f.t+=dt;f.g.scale.setScalar(.5+f.t*12);f.g.material.opacity=Math.max(0,.8-f.t*2.4);if(f.t>.35){scene.remove(f.g);fxs.splice(i,1)}}}
 // ---- メインtick ----
 // Retain the original sixteen ordered relaxation passes for dust power.
