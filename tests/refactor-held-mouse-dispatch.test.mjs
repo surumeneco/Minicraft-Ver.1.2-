@@ -18,7 +18,7 @@ function fixture(){
   dispatchEvent:ev=>events.push(ev),
   MouseEvent:class {constructor(type,options){this.type=type;Object.assign(this,options)}},
   pauseMenuOpen:false,msg:{style:{display:'none'}},inv:false,locked:true,fallback:false,
-  target:{x:0,y:2,z:0,t:2},pickMob:()=>null,getB:()=>3,
+  target:{x:0,y:2,z:0,t:2},pickMob:()=>null,getB:()=>3,blockBaseId:v=>v&255,
   hot:[7],sel:0,isItem:()=>false,ITEMS:{},
   document:{getElementById:()=>({style:{display:'none'}})},
   CONTB:new Set([20]),LEVER:21,STONE_BUTTON:22,PRESSURE:23,RED_DUST:24,
