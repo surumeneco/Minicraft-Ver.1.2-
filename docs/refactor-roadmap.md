@@ -1,10 +1,20 @@
 # 残存リファクタリング計画
 
-初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `674ccf14356c880cc6a0e7c6fd6bf641d4eaa80a`（2026-10-16、PR #64統合後）。
+初期基準: `develop` @ `a4356983abb568d242d5cad0408bdff4ddda5516`。最新確認基準: `develop` @ `d78abf676c5fa69e4c65bbfe91b1b9e3be7606af`（2026-10-16、PR #65統合後）。
 目的: ゲームの表示・計算・データ形式・保存形式を変えず、責務境界とテスト可能性を改善する。
 対象外: 仕様変更、見た目変更、ゲームバランス、描画最適化自体、現行セーブ形式の破壊。
 原則: **既存挙動を回帰テストで固定 → 小単位の変更 → CI → developへ統合**。
 提出済みの `PR/` ブランチと `main` は変更しない。
+
+## 現在の状態（2026-10-16、PR #65統合後）
+
+- `develop`: `d78abf676c5fa69e4c65bbfe91b1b9e3be7606af`。Node.js構造・回帰検査 **304テスト成功・失敗0**（[統合後 Run #38908666406](https://github.com/surumeneco/Minicraft-Ver.1.2-/actions/runs/38908666406)）。
+- [PR #64](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/64): 衝突判定と右長押し設置の3箇所を`blockBaseId`へ統一。4件の追加回帰テスト。テストハーネスの依存を整合。
+- [PR #65](https://github.com/surumeneco/Minicraft-Ver.1.2-/pull/65): 主マウス操作のID／状態値19サイトを`blockBaseId` / `blockState`へ統一。5件の追加回帰テスト。チェスト、レバー、回転、破壊・ドロップ、設置経路を旧実装で固定。
+- 両PRとも、変更前Green・Node.js構造テスト・Chromium実ブラウザ・変更前後の固定WebGL全RGBA SHA-256比較を成功させてから統合した。`main`と提出済み`PR/**`は変更していない。
+- **未完了**: 他ファイルの直接ビット演算と責務分離、ユーザー実セーブを用いた互換検証、全描画条件の比較、正式CAT-TDD 3 Gate（`not-run`）。検証済み範囲を越える保証とは扱わない。
+
+以降の「PR #62統合後」および過去の各節は実施時点の記録として保持し、現行状態は本節を優先する。
 
 ## 2026-10-16：主マウス操作のBlock ID／状態アクセサ統一
 
