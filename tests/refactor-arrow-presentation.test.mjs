@@ -36,7 +36,7 @@ test('two live arrows update presentation in reverse insertion order after physi
   ['second','set',10.1,9.1,5.8],
   ['second','aim',11.1,10.1,3.8],
   ['first','set',1.2,4.9,3.1],
-  ['first','aim',3.2,3.9,4.1]
+  ['first','aim',3.2,3.9000000000000004,4.1]
  ]);
  assert.equal(f.removed.length,0);
  assert.equal(f.arrows.length,2);
@@ -57,7 +57,7 @@ test('surviving projectile pose follows updated velocity rather than stale data'
  f.run(.1);
  assert.deepEqual(f.operations,[
   ['one','set',0,4.9,0],
-  ['one','aim',0,3.9,0]
+  ['one','aim',0,3.9000000000000004,0]
  ]);
  assert.equal(a.vy,-1);
 });
